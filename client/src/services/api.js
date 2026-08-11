@@ -103,7 +103,7 @@ api.interceptors.response.use(
 
     // Custom message for offline server
     if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
-      message = 'Server is not started. Please ask the administrator/developer to start the server.';
+      message = 'Unable to establish a connection to the server. Please contact the system administrator to verify that backend services are active.';
     }
 
     return Promise.reject({ ...error, message });
