@@ -38,10 +38,10 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(cors({
-  origin: env.CLIENT_URL,
+  origin: [env.CLIENT_URL, 'https://rasoijunction.vercel.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
 }));
 
 // ─── Body Parsing ────────────────────────────────────────────────────
