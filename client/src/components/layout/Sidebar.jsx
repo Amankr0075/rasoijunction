@@ -185,8 +185,8 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-200 group ${isActive
-                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/25'
-                    : 'text-dark-600 dark:text-dark-400 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-dark-800 dark:hover:text-white'
+                  ? 'bg-primary-500 text-white shadow-md shadow-primary-500/25'
+                  : 'text-dark-600 dark:text-dark-400 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-dark-800 dark:hover:text-white'
                   }`}
                 title={collapsed ? item.label : undefined}
               >

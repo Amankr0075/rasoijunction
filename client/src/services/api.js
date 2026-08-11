@@ -96,10 +96,15 @@ api.interceptors.response.use(
     }
 
     // Extract error message
-    const message =
+    let message =
       error.response?.data?.message ||
       error.message ||
       'Something went wrong. Please try again.';
+
+    // Custom message for offline server
+    if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+      message = 'Server is not started. Please ask the administrator/developer to start the server.';
+    }
 
     return Promise.reject({ ...error, message });
   }
