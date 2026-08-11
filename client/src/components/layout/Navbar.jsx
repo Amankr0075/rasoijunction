@@ -116,11 +116,10 @@ const Navbar = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
           ? 'glass-nav shadow-lg'
           : 'bg-transparent'
-      }`}
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
@@ -143,11 +142,10 @@ const Navbar = () => {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  location.pathname === link.path
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${location.pathname === link.path
                     ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10'
                     : 'text-dark-600 dark:text-dark-300 hover:text-primary-500 hover:bg-gray-50 dark:hover:bg-dark-800'
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
@@ -169,6 +167,21 @@ const Navbar = () => {
               )}
             </button>
 
+            {/* Cart (Visible to guests and customers) */}
+            {(!user || user.role === 'customer') && (
+              <Link
+                to="/cart"
+                className="relative p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800 text-gray-600 dark:text-dark-400 transition-all duration-200"
+              >
+                <HiOutlineShoppingCart className="w-5 h-5" />
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {cartItems.reduce((sum, i) => sum + i.quantity, 0)}
+                  </span>
+                )}
+              </Link>
+            )}
+
             {isAuthenticated ? (
               <>
                 {/* Wishlist */}
@@ -181,96 +194,83 @@ const Navbar = () => {
                   </Link>
                 )}
 
-                {/* Cart */}
-                {user?.role === 'customer' && (
-                  <Link
-                    to="/cart"
-                    className="relative p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800 text-gray-600 dark:text-dark-400 transition-all duration-200"
+
+
+                {/* Notifications */}
+                <div className="relative hidden sm:block">
+                  <button
+                    onClick={() => {
+                      setIsNotificationsOpen(!isNotificationsOpen);
+                      setIsProfileOpen(false);
+                    }}
+                    className="relative p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800 text-gray-600 dark:text-dark-400 transition-all duration-200 flex"
                   >
-                    <HiOutlineShoppingCart className="w-5 h-5" />
-                    {cartItems.length > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                        {cartItems.reduce((sum, i) => sum + i.quantity, 0)}
-                      </span>
+                    <HiOutlineBell className="w-5 h-5" />
+                    {hasUnread && (
+                      <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-danger-500 rounded-full border-2 border-white dark:border-dark-900" />
                     )}
-                  </Link>
-                )}
+                  </button>
 
-                 {/* Notifications */}
-                 <div className="relative hidden sm:block">
-                   <button 
-                     onClick={() => {
-                       setIsNotificationsOpen(!isNotificationsOpen);
-                       setIsProfileOpen(false);
-                     }}
-                     className="relative p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800 text-gray-600 dark:text-dark-400 transition-all duration-200 flex"
-                   >
-                     <HiOutlineBell className="w-5 h-5" />
-                     {hasUnread && (
-                       <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-danger-500 rounded-full border-2 border-white dark:border-dark-900" />
-                     )}
-                   </button>
-
-                   <AnimatePresence>
-                     {isNotificationsOpen && (
-                       <motion.div
-                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                         className="absolute right-0 mt-3 w-80 bg-white dark:bg-dark-900 border border-gray-100 dark:border-dark-800 rounded-2xl shadow-xl z-50 overflow-hidden"
-                       >
-                         <div className="p-4 border-b border-gray-50 dark:border-dark-800 flex justify-between items-center bg-gray-50/50 dark:bg-dark-950/20">
-                           <span className="font-bold text-dark-800 dark:text-white text-sm">Notifications</span>
-                           {hasUnread && (
-                             <button 
-                               onClick={markAllAsRead} 
-                               className="text-xs text-primary-500 hover:text-primary-600 font-semibold bg-transparent border-0 cursor-pointer"
-                             >
-                               Mark all read
-                             </button>
-                           )}
-                         </div>
-                          <div className="max-h-64 overflow-y-auto divide-y divide-gray-50 dark:divide-dark-800">
-                            {notifications.length === 0 ? (
-                              <div className="p-4 text-center text-xs text-gray-400">
-                                No notifications.
+                  <AnimatePresence>
+                    {isNotificationsOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute right-0 mt-3 w-80 bg-white dark:bg-dark-900 border border-gray-100 dark:border-dark-800 rounded-2xl shadow-xl z-50 overflow-hidden"
+                      >
+                        <div className="p-4 border-b border-gray-50 dark:border-dark-800 flex justify-between items-center bg-gray-50/50 dark:bg-dark-950/20">
+                          <span className="font-bold text-dark-800 dark:text-white text-sm">Notifications</span>
+                          {hasUnread && (
+                            <button
+                              onClick={markAllAsRead}
+                              className="text-xs text-primary-500 hover:text-primary-600 font-semibold bg-transparent border-0 cursor-pointer"
+                            >
+                              Mark all read
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-64 overflow-y-auto divide-y divide-gray-50 dark:divide-dark-800">
+                          {notifications.length === 0 ? (
+                            <div className="p-4 text-center text-xs text-gray-400">
+                              No notifications.
+                            </div>
+                          ) : (
+                            notifications.map((n) => (
+                              <div
+                                key={n._id || n.id}
+                                className={`p-4 text-left cursor-pointer transition-colors ${n.read ? 'hover:bg-gray-50 dark:hover:bg-dark-800/40' : 'bg-primary-500/5 hover:bg-primary-500/10'}`}
+                              >
+                                <p className={`text-xs ${n.read ? 'text-gray-600 dark:text-dark-300' : 'text-dark-800 dark:text-white font-medium'}`}>
+                                  {n.message || n.text}
+                                </p>
+                                {n.attachmentUrl && (
+                                  <div className="mt-2 text-xs">
+                                    <a
+                                      href={n.attachmentUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-dark-800 text-primary-600 dark:text-primary-400 rounded-md hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors border border-gray-200 dark:border-dark-700 font-medium"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                      </svg>
+                                      View Attachment
+                                    </a>
+                                  </div>
+                                )}
+                                <span className="text-[10px] text-gray-400 mt-1 block">
+                                  {n.createdAt ? new Date(n.createdAt).toLocaleTimeString() : n.time}
+                                </span>
                               </div>
-                            ) : (
-                              notifications.map((n) => (
-                                <div 
-                                  key={n._id || n.id} 
-                                  className={`p-4 text-left cursor-pointer transition-colors ${n.read ? 'hover:bg-gray-50 dark:hover:bg-dark-800/40' : 'bg-primary-500/5 hover:bg-primary-500/10'}`}
-                                >
-                                  <p className={`text-xs ${n.read ? 'text-gray-600 dark:text-dark-300' : 'text-dark-800 dark:text-white font-medium'}`}>
-                                    {n.message || n.text}
-                                  </p>
-                                  {n.attachmentUrl && (
-                                    <div className="mt-2 text-xs">
-                                      <a 
-                                        href={n.attachmentUrl} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-dark-800 text-primary-600 dark:text-primary-400 rounded-md hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors border border-gray-200 dark:border-dark-700 font-medium"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                        </svg>
-                                        View Attachment
-                                      </a>
-                                    </div>
-                                  )}
-                                  <span className="text-[10px] text-gray-400 mt-1 block">
-                                    {n.createdAt ? new Date(n.createdAt).toLocaleTimeString() : n.time}
-                                  </span>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                       </motion.div>
-                     )}
-                   </AnimatePresence>
-                 </div>
+                            ))
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
                 {/* Profile Dropdown */}
                 <div className="relative">
@@ -314,7 +314,7 @@ const Navbar = () => {
                             <HiOutlineViewGrid className="w-4 h-4" />
                             Dashboard
                           </Link>
-                           <Link
+                          <Link
                             to={getSettingsLink()}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-dark-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
                           >
@@ -383,11 +383,10 @@ const Navbar = () => {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`block px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                    location.pathname === link.path
+                  className={`block px-4 py-3 rounded-xl text-sm font-medium transition-colors ${location.pathname === link.path
                       ? 'text-primary-600 bg-primary-50 dark:bg-primary-500/10'
                       : 'text-dark-600 dark:text-dark-300 hover:bg-gray-50 dark:hover:bg-dark-800'
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </Link>
