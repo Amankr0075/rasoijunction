@@ -119,7 +119,6 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
   const menuItems = getMenuItems();
 
   return (
-  return (
     <>
       {/* Mobile Overlay */}
       {mobileOpen && (
