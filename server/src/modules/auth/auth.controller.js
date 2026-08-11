@@ -188,6 +188,14 @@ export const getAllUsers = asyncHandler(async (req, res) => {
  * @access  Admin
  */
 export const deleteUser = asyncHandler(async (req, res) => {
+  const targetUser = await User.findById(req.params.id);
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+  if (req.user.role === 'manager' && targetUser.role === 'admin') {
+    return res.status(403).json({ success: false, message: 'Managers cannot delete administrators.' });
+  }
+
   await authService.deleteUser(req.params.id);
 
   res.status(200).json({
@@ -203,6 +211,10 @@ export const deleteUser = asyncHandler(async (req, res) => {
  */
 export const createUser = asyncHandler(async (req, res) => {
   const { name, email, password, phone, role, staffDetails, employeeId } = req.body;
+  if (req.user.role === 'manager' && role === 'admin') {
+    return res.status(403).json({ success: false, message: 'Managers cannot create administrators.' });
+  }
+
   const user = await authService.createUser({ name, email, password, phone, role, staffDetails, employeeId });
 
   res.status(201).json({
@@ -218,6 +230,14 @@ export const createUser = asyncHandler(async (req, res) => {
  * @access  Admin
  */
 export const updateUserByAdmin = asyncHandler(async (req, res) => {
+  const targetUser = await User.findById(req.params.id);
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+  if (req.user.role === 'manager' && targetUser.role === 'admin') {
+    return res.status(403).json({ success: false, message: 'Managers cannot update administrators.' });
+  }
+
   const { name, email, phone, role, password, staffDetails, employeeId } = req.body;
   const user = await authService.updateUserByAdmin(req.params.id, { name, email, phone, role, password, staffDetails, employeeId });
 

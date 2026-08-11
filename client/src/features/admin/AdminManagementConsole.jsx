@@ -1210,7 +1210,9 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                     <option value="chef">Chef</option>
                     <option value="delivery">Delivery Partner</option>
                     <option value="manager">Manager</option>
-                    <option value="admin">Administrator</option>
+                    {user?.role?.toLowerCase() !== 'manager' && (
+                      <option value="admin">Administrator</option>
+                    )}
                   </select>
                 </div>
               )}
@@ -1326,7 +1328,9 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                   <option value="chef">Chef</option>
                   <option value="delivery">Delivery Partner</option>
                   <option value="manager">Manager</option>
-                  <option value="admin">Administrator</option>
+                  {user?.role?.toLowerCase() !== 'manager' && (
+                    <option value="admin">Administrator</option>
+                  )}
                 </select>
               </div>
               {editUserFormData.role && editUserFormData.role !== 'customer' && (
