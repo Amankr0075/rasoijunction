@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { useTheme } from '../../context/ThemeContext';
-import { HiOutlineSun, HiOutlineMoon, HiOutlineBell, HiOutlineSearch, HiOutlineHome } from 'react-icons/hi';
+import { HiOutlineSun, HiOutlineMoon, HiOutlineBell, HiOutlineSearch, HiOutlineHome, HiOutlineMenu } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,7 @@ const DashboardLayout = ({ children }) => {
   const { isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
@@ -44,17 +45,27 @@ const DashboardLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      <Sidebar />
+      <Sidebar 
+        collapsed={sidebarCollapsed} 
+        setCollapsed={setSidebarCollapsed} 
+        mobileOpen={mobileSidebarOpen} 
+        setMobileOpen={setMobileSidebarOpen} 
+      />
 
       {/* Main Content */}
       <div
-        className="transition-all duration-300"
-        style={{ marginLeft: sidebarCollapsed ? 80 : 260 }}
+        className={`transition-all duration-300 ml-0 ${sidebarCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[260px]'}`}
       >
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 glass-nav h-16 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <div className="relative">
+        <header className="sticky top-0 z-30 glass-nav h-16 flex items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="lg:hidden p-2 -ml-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
+            >
+              <HiOutlineMenu className="w-6 h-6" />
+            </button>
+            <div className="relative hidden sm:block">
               <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
