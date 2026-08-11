@@ -106,18 +106,18 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
         api.get('/orders'),
         api.get('/reservations')
       ]);
-      
+
       const orders = ordersRes.data || [];
       const reservations = resRes.data || [];
-      
+
       // Calculate total sales (delivered orders)
       const totalSales = orders
         .filter(o => o.orderStatus === 'delivered' || o.orderStatus === 'completed')
         .reduce((sum, o) => sum + (o.total || 0), 0);
-        
+
       // Calculate active tables (approved or pending reservations for today/future)
       const activeTables = reservations.filter(r => r.status === 'approved' || r.status === 'pending').length;
-      
+
       setKpiStats({ totalSales, activeTables, orders, reservations });
     } catch (err) {
       console.error('Failed to fetch KPI stats:', err);
@@ -194,10 +194,13 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
     try {
       const res = await api.get('/auth/users', { params: { limit: 100 } });
       const allUsers = res.data.users || [];
-      
+
       const customerList = allUsers.filter(u => u.role === 'customer');
-      const staffList = allUsers.filter(u => u.role !== 'customer');
-      
+      let staffList = allUsers.filter(u => u.role !== 'customer');
+      if (user?.role?.toLowerCase() === 'manager') {
+        staffList = staffList.filter(u => u.role?.toLowerCase() !== 'admin');
+      }
+
       setCustomers(customerList.map(c => ({
         ...c,
         totalOrders: c.totalOrders || 0,
@@ -244,7 +247,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
       toast.error('Name and Email are required.');
       return;
     }
-    
+
     try {
       const payload = {
         name: editUserFormData.name,
@@ -252,11 +255,11 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
         phone: editUserFormData.phone,
         role: editUserFormData.role
       };
-      
+
       if (editUserFormData.password) {
         payload.password = editUserFormData.password;
       }
-      
+
       if (editUserFormData.role !== 'customer' && editUserFormData.staffDetails) {
         payload.staffDetails = editUserFormData.staffDetails;
       }
@@ -277,9 +280,9 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
     e.preventDefault();
     if (!selectedAttendanceStaff) return;
     try {
-      await api.put(`/auth/users/${selectedAttendanceStaff._id || selectedAttendanceStaff.id}/attendance`, { 
-        date: attendanceDate, 
-        status: attendanceStatus 
+      await api.put(`/auth/users/${selectedAttendanceStaff._id || selectedAttendanceStaff.id}/attendance`, {
+        date: attendanceDate,
+        status: attendanceStatus
       });
       toast.success(`Attendance marked as ${attendanceStatus}`);
       setShowAttendanceModal(false);
@@ -296,7 +299,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
       toast.error('Please enter a valid amount.');
       return;
     }
-    
+
     try {
       await api.post(`/auth/users/${selectedSalaryStaff._id || selectedSalaryStaff.id}/salary-payment`, {
         month: Number(paySalaryData.month),
@@ -555,8 +558,8 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
             Enterprise {activeTab} Control Console
           </h1>
           <p className="text-sm text-gray-500 dark:text-dark-400">
-            {user?.role === 'staff' 
-              ? 'View and manage customer reviews for our services and food.' 
+            {user?.role === 'staff'
+              ? 'View and manage customer reviews for our services and food.'
               : 'Enterprise administration control hub. Audit inventory, roster shifts, manage coupons, and export sales reports.'}
           </p>
         </div>
@@ -584,11 +587,10 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${
-                  activeTab === tab.id
-                    ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/20'
-                    : 'text-gray-500 dark:text-dark-400 hover:bg-gray-100 dark:hover:bg-dark-800'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${activeTab === tab.id
+                  ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/20'
+                  : 'text-gray-500 dark:text-dark-400 hover:bg-gray-100 dark:hover:bg-dark-800'
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
@@ -847,28 +849,28 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                             const attendance = row.staffDetails?.attendance || [];
                             const currentMonth = new Date().getMonth();
                             const currentYear = new Date().getFullYear();
-                            
+
                             const currentMonthRecords = attendance.filter(a => {
                               try {
                                 const d = new Date(a.date);
                                 return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
                               } catch { return false; }
                             });
-                            
+
                             let penalty = 0;
                             currentMonthRecords.forEach(a => {
                               if (a.status === 'Absent') penalty += dailyRate;
                               if (a.status === 'Half-Day') penalty += (dailyRate * 0.5);
                             });
-                            
+
                             const payable = Math.max(0, baseSalary - penalty).toFixed(0);
 
                             setSelectedSalaryStaff(row);
-                            setPaySalaryData({ 
-                              month: currentMonth, 
-                              year: currentYear, 
-                              amount: payable, 
-                              paymentMethod: 'Cash' 
+                            setPaySalaryData({
+                              month: currentMonth,
+                              year: currentYear,
+                              amount: payable,
+                              paymentMethod: 'Cash'
                             });
                             setShowPaySalaryModal(true);
                           }}
@@ -969,13 +971,13 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                 </div>
                 <div className="flex gap-2">
                   {user?.role === 'admin' && (
-                    <Button 
-                      variant={isMaintenanceMode ? "danger" : "outline"} 
-                      size="sm" 
+                    <Button
+                      variant={isMaintenanceMode ? "danger" : "outline"}
+                      size="sm"
                       onClick={handleToggleMaintenance}
                       className={isMaintenanceMode ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100" : ""}
                     >
-                      <HiOutlineCog className="w-4 h-4 mr-1 inline" /> 
+                      <HiOutlineCog className="w-4 h-4 mr-1 inline" />
                       {isMaintenanceMode ? 'Maintenance Mode: ON' : 'Enable Maintenance'}
                     </Button>
                   )}
@@ -993,9 +995,8 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                     header: 'Type',
                     field: 'type',
                     render: (type, row) => (
-                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                        row.read ? 'bg-gray-100 text-gray-400 dark:bg-dark-800 dark:text-dark-500' : 'bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-400'
-                      }`}>
+                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${row.read ? 'bg-gray-100 text-gray-400 dark:bg-dark-800 dark:text-dark-500' : 'bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-400'
+                        }`}>
                         {type}
                       </span>
                     ),
@@ -1041,10 +1042,10 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                   { header: 'Subject', field: 'subject', render: (val) => <span className="font-semibold text-primary-500 text-xs">{val}</span> },
                   { header: 'Message', field: 'message', render: (val) => <p className="max-w-xs break-words text-xs">{val}</p> },
                   { header: 'Date', field: 'date', render: (d, row) => <span className="text-xs text-gray-500">{d || (row.createdAt ? new Date(row.createdAt).toLocaleDateString() : '')}</span> },
-                  { 
-                    header: 'Status', 
-                    field: 'reply', 
-                    render: (reply) => <Badge variant={reply ? 'success' : 'warning'}>{reply ? 'Replied' : 'Pending Reply'}</Badge> 
+                  {
+                    header: 'Status',
+                    field: 'reply',
+                    render: (reply) => <Badge variant={reply ? 'success' : 'warning'}>{reply ? 'Replied' : 'Pending Reply'}</Badge>
                   },
                   {
                     header: 'Reply / Actions',
@@ -1096,10 +1097,10 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                   { header: 'Subject', field: 'subject', render: (val) => <span className="font-semibold text-primary-500 text-xs">{val}</span> },
                   { header: 'Message', field: 'message', render: (val) => <p className="max-w-md break-words text-xs">{val}</p> },
                   { header: 'Date', field: 'createdAt', render: (d) => <span className="text-xs text-gray-500">{d ? new Date(d).toLocaleDateString() : ''}</span> },
-                  { 
-                    header: 'Status', 
-                    field: 'reply', 
-                    render: (reply) => <Badge variant={reply ? 'success' : 'warning'}>{reply ? 'Replied' : 'Pending Reply'}</Badge> 
+                  {
+                    header: 'Status',
+                    field: 'reply',
+                    render: (reply) => <Badge variant={reply ? 'success' : 'warning'}>{reply ? 'Replied' : 'Pending Reply'}</Badge>
                   },
                   {
                     header: 'Reply / Actions',
@@ -1240,15 +1241,15 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1">Base Salary (₹)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 15000"
-                    value={userFormData.salary || ''}
-                    onChange={(e) => setUserFormData({ ...userFormData, salary: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm focus:outline-none focus:border-primary-500"
-                  />
-                </div>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 15000"
+                      value={userFormData.salary || ''}
+                      onChange={(e) => setUserFormData({ ...userFormData, salary: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm focus:outline-none focus:border-primary-500"
+                    />
+                  </div>
                 </>
               )}
               <div className="flex justify-end gap-2 pt-2">
@@ -1361,7 +1362,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                         placeholder="e.g. 15000"
                         value={editUserFormData.staffDetails?.salary || ''}
                         onChange={(e) => setEditUserFormData({
-                          ...editUserFormData, 
+                          ...editUserFormData,
                           staffDetails: { ...editUserFormData.staffDetails, salary: e.target.value }
                         })}
                         className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm focus:outline-none focus:border-primary-500"
@@ -1377,14 +1378,14 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                         placeholder="e.g. 4.5"
                         value={editUserFormData.staffDetails?.rating || ''}
                         onChange={(e) => setEditUserFormData({
-                          ...editUserFormData, 
+                          ...editUserFormData,
                           staffDetails: { ...editUserFormData.staffDetails, rating: e.target.value }
                         })}
                         className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm focus:outline-none focus:border-primary-500"
                       />
                     </div>
                   </div>
-                  
+
                 </>
               )}
               <div className="flex justify-end gap-2 pt-2">
@@ -1398,7 +1399,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
       {/* Attendance Modal */}
       {showAttendanceModal && selectedAttendanceStaff && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl max-w-md w-full overflow-hidden p-6"
@@ -1411,7 +1412,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Date
                 </label>
-                <input 
+                <input
                   type="date"
                   value={attendanceDate}
                   onChange={(e) => setAttendanceDate(e.target.value)}
@@ -1423,7 +1424,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Status
                 </label>
-                <select 
+                <select
                   value={attendanceStatus}
                   onChange={(e) => setAttendanceStatus(e.target.value)}
                   className="w-full bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-xl px-4 py-2 text-dark-900 dark:text-white"
@@ -1435,7 +1436,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                   <option value="Leave">Leave</option>
                 </select>
               </div>
-              
+
               <div className="flex justify-end gap-2 mt-6">
                 <Button variant="outline" type="button" onClick={() => setShowAttendanceModal(false)}>
                   Cancel
@@ -1448,11 +1449,11 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
           </motion.div>
         </div>
       )}
-      
+
       {/* Broadcast Message Modal */}
       {showBroadcastModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
@@ -1467,8 +1468,8 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Subject
                 </label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="w-full bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-xl px-4 py-2 text-dark-900 dark:text-white"
                   value={broadcastData.subject}
                   onChange={(e) => setBroadcastData({ ...broadcastData, subject: e.target.value })}
@@ -1479,7 +1480,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Message
                 </label>
-                <textarea 
+                <textarea
                   className="w-full bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-xl px-4 py-2 text-dark-900 dark:text-white"
                   rows="4"
                   placeholder="Enter the broadcast message here..."
@@ -1492,8 +1493,8 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Attachment (Optional)
                 </label>
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-900/20 dark:file:text-primary-400"
                   onChange={(e) => setBroadcastData({ ...broadcastData, attachment: e.target.files[0] })}
                   accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt"
@@ -1512,7 +1513,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
       {/* Pay Salary Modal */}
       {showPaySalaryModal && selectedSalaryStaff && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl max-w-md w-full overflow-hidden p-6"
@@ -1524,9 +1525,9 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Month</label>
-                  <select 
+                  <select
                     value={paySalaryData.month}
-                    onChange={(e) => setPaySalaryData({...paySalaryData, month: e.target.value})}
+                    onChange={(e) => setPaySalaryData({ ...paySalaryData, month: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg"
                   >
                     {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, i) => (
@@ -1536,29 +1537,29 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year</label>
-                  <input 
+                  <input
                     type="number"
                     value={paySalaryData.year}
-                    onChange={(e) => setPaySalaryData({...paySalaryData, year: e.target.value})}
+                    onChange={(e) => setPaySalaryData({ ...paySalaryData, year: e.target.value })}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg"
                   />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (₹)</label>
-                <input 
+                <input
                   type="number"
                   required
                   value={paySalaryData.amount}
-                  onChange={(e) => setPaySalaryData({...paySalaryData, amount: e.target.value})}
+                  onChange={(e) => setPaySalaryData({ ...paySalaryData, amount: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Method</label>
-                <select 
+                <select
                   value={paySalaryData.paymentMethod}
-                  onChange={(e) => setPaySalaryData({...paySalaryData, paymentMethod: e.target.value})}
+                  onChange={(e) => setPaySalaryData({ ...paySalaryData, paymentMethod: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg"
                 >
                   <option value="Cash">Cash</option>

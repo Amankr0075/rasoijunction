@@ -140,7 +140,11 @@ const AdminDashboard = () => {
   const totalCustomersCount = users.filter(u => u.role === 'customer').length;
 
   // 4. Total Staff
-  const totalStaffCount = users.filter(u => u.role !== 'customer').length;
+  const totalStaffCount = users.filter(u => {
+    if (u.role === 'customer') return false;
+    if (user?.role?.toLowerCase() === 'manager' && u.role?.toLowerCase() === 'admin') return false;
+    return true;
+  }).length;
 
   // 5. Reservations count
   const reservationsCount = reservations.length;
