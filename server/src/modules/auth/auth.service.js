@@ -209,6 +209,10 @@ class AuthService {
       throw new AppError('Invalid email or password.', 401);
     }
 
+    if (!user.isVerified) {
+      throw new AppError('Please verify your email address to login.', 403);
+    }
+
     if (user.isBlocked) {
       throw new AppError('Your account has been blocked. Please email support with your concern to rasoijunction.admin@gmail.com to unlock your account.', 403);
     }
@@ -466,7 +470,7 @@ class AuthService {
    * Get all users (admin)
    */
   async getAllUsers({ page = 1, limit = 10, role, search }) {
-    const query = {};
+    const query = { isVerified: true };
 
     if (role) query.role = role;
     if (search) {
