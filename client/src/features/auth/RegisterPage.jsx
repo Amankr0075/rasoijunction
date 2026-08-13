@@ -178,6 +178,24 @@ const RegisterPage = () => {
               />
             </motion.div>
 
+            <motion.div variants={fadeInUp} className="flex items-start gap-2 pt-2">
+              <input
+                type="checkbox"
+                id="acceptTerms"
+                className="mt-1 w-4 h-4 rounded text-amber-500 focus:ring-amber-500 bg-white/10 border-white/20"
+                {...register('acceptTerms', { required: 'You must accept the terms and conditions' })}
+              />
+              <div className="flex flex-col">
+                <label htmlFor="acceptTerms" className="text-sm text-white/70">
+                  I agree to the{' '}
+                  <Link to="/privacy-policy" className="text-amber-400 hover:text-amber-300 font-semibold hover:underline">Privacy Policy</Link>
+                  {' '}and{' '}
+                  <Link to="/terms-of-service" className="text-amber-400 hover:text-amber-300 font-semibold hover:underline">Terms & Conditions</Link>
+                </label>
+                {errors.acceptTerms && <p className="text-red-400 text-xs mt-1">{errors.acceptTerms.message}</p>}
+              </div>
+            </motion.div>
+
             <motion.div variants={fadeInUp} className="pt-2">
               <Button
                 type="submit"

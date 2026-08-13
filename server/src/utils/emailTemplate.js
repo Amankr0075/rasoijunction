@@ -73,11 +73,6 @@ export const generateEmailTemplate = (contentHtml) => {
           color: #666666;
           font-size: 14px;
         }
-        .footer-logo {
-          width: 80px;
-          margin-top: 15px;
-          opacity: 0.7;
-        }
       </style>
     </head>
     <body>
@@ -90,13 +85,12 @@ export const generateEmailTemplate = (contentHtml) => {
           ${contentHtml}
           
           <div class="button-container">
-            <a href="https://rasoijunction.vercel.app/" class="btn">Visit Rasoi Junction</a>
+            <a href="https://rasoijunction.vercel.app/menu" class="btn">Explore our menu</a>
           </div>
         </div>
         <div class="footer">
           <p>Best regards,</p>
           <p><strong>The Rasoi Junction Team</strong></p>
-          <img src="cid:logo" alt="Rasoi Junction" class="footer-logo" />
         </div>
       </div>
     </body>
