@@ -53,7 +53,7 @@ class AuthService {
     }
 
     // Check if user already exists
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: email.trim().toLowerCase() });
 
     if (user && user.isVerified) {
       throw new AppError('An account with this email already exists.', 400);
@@ -128,8 +128,11 @@ class AuthService {
    */
   async verifyRegistration(email, otp) {
     if (!email) throw new AppError('Email is required.', 400);
-    const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+password');
+    const searchEmail = email.trim();
+    // Use regex for case-insensitive match in case DB has mixed case emails
+    const user = await User.findOne({ email: { $regex: new RegExp('^' + searchEmail + '$', 'i') } }).select('+password');
     if (!user) {
+      console.error(`VerifyRegistration: User not found for email: ${searchEmail}`);
       throw new AppError('User not found.', 404);
     }
     if (user.isVerified) {
