@@ -7,11 +7,16 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser, HiOutlinePhone, HiOutlineArrowLeft } from 'react-icons/hi';
+import Modal from '../../components/ui/Modal';
+import { TermsContent } from '../public/TermsOfServicePage';
+import { PrivacyContent } from '../public/PrivacyPolicyPage';
 
 const RegisterPage = () => {
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const {
     register,
     handleSubmit,
@@ -188,9 +193,9 @@ const RegisterPage = () => {
               <div className="flex flex-col">
                 <label htmlFor="acceptTerms" className="text-sm text-white/70">
                   I agree to the{' '}
-                  <Link to="/privacy-policy" className="text-amber-400 hover:text-amber-300 font-semibold hover:underline">Privacy Policy</Link>
+                  <button type="button" onClick={() => setIsPrivacyModalOpen(true)} className="text-amber-400 hover:text-amber-300 font-semibold hover:underline">Privacy Policy</button>
                   {' '}and{' '}
-                  <Link to="/terms-of-service" className="text-amber-400 hover:text-amber-300 font-semibold hover:underline">Terms & Conditions</Link>
+                  <button type="button" onClick={() => setIsTermsModalOpen(true)} className="text-amber-400 hover:text-amber-300 font-semibold hover:underline">Terms & Conditions</button>
                 </label>
                 {errors.acceptTerms && <p className="text-red-400 text-xs mt-1">{errors.acceptTerms.message}</p>}
               </div>
@@ -221,6 +226,24 @@ const RegisterPage = () => {
           </motion.div>
         </motion.div>
       </div>
+    {/* Modals */}
+      <Modal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        title="Terms of Service"
+        size="lg"
+      >
+        <TermsContent />
+      </Modal>
+      
+      <Modal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+        title="Privacy Policy"
+        size="lg"
+      >
+        <PrivacyContent />
+      </Modal>
     </div>
   );
 };
