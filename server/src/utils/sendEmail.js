@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import env from '../config/env.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { generateEmailTemplate } from './emailTemplate.js';
 
 /**
  * Send an email using Nodemailer
@@ -39,9 +40,19 @@ const sendEmail = async (options) => {
     ];
 
     // Combine default with provided attachments
-    const finalAttachments = options.attachments 
+    const finalAttachments = options.attachments
       ? [...defaultAttachments, ...options.attachments]
       : defaultAttachments;
+
+    // Prepare HTML content using the template
+    let contentHtml = options.html;
+
+    // If html is not provided, convert text to simple html paragraphs
+    if (!contentHtml && options.message) {
+      contentHtml = options.message.split('\n').map(line => `<p>${line}</p>`).join('');
+    }
+
+    const finalHtml = generateEmailTemplate(contentHtml);
 
     // 2. Define the email options
     const mailOptions = {
@@ -49,7 +60,7 @@ const sendEmail = async (options) => {
       to: options.email,
       subject: options.subject,
       text: options.message,
-      ...(options.html && { html: options.html }),
+      html: finalHtml,
       attachments: finalAttachments,
     };
 
