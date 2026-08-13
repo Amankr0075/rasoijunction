@@ -3,6 +3,7 @@ import api from './api';
 const authService = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (data) => api.post('/auth/register', data),
+  verifyRegistration: (data) => api.post('/auth/verify-registration', data),
   logout: () => api.post('/auth/logout'),
   getMe: () => api.get('/auth/me'),
   refreshToken: () => api.post('/auth/refresh-token'),

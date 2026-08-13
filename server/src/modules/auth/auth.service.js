@@ -44,45 +44,126 @@ class AuthService {
   }
 
   /**
-   * Register a new user
+   * Register a new user (initial step, unverified)
    */
-  async register({ name, email, password, phone, role }) {
+  async register({ name, email, password, phone, role, ip }) {
+    // Validate email
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      throw new AppError('Please provide a valid email address.', 400);
+    }
+
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    let user = await User.findOne({ email });
+
+    if (user && user.isVerified) {
       throw new AppError('An account with this email already exists.', 400);
     }
 
     // Only allow customer role from public registration
     const allowedRole = ['customer'].includes(role) ? role : 'customer';
 
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
-      role: allowedRole,
-    });
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    if (user) {
+      // Update unverified user
+      user.name = name;
+      user.password = password; // Will be hashed by pre-save hook
+      user.phone = phone;
+      user.role = allowedRole;
+      user.registrationOtp = otp;
+      user.registrationOtpExpire = otpExpire;
+      await user.save();
+    } else {
+      // Create new unverified user
+      user = await User.create({
+        name,
+        email,
+        password,
+        phone,
+        role: allowedRole,
+        isVerified: false,
+        registrationOtp: otp,
+        registrationOtpExpire: otpExpire,
+        lastIpAddress: ip,
+      });
+    }
+
+    // Send OTP email
+    const htmlMessage = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+      <div style="background-color: #f97316; padding: 30px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Verify Your Email</h1>
+      </div>
+      <div style="padding: 40px 30px; background-color: #ffffff; color: #374151;">
+        <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">Hi ${user.name},</p>
+        <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">Thank you for registering. Please use the following OTP to verify your email address:</p>
+        
+        <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: center; border-left: 4px solid #f97316;">
+          <h2 style="margin: 0; font-size: 32px; letter-spacing: 5px; color: #ea580c;">${otp}</h2>
+        </div>
+        
+        <p style="font-size: 14px; color: #6b7280; text-align: center;">This OTP is valid for 10 minutes.</p>
+      </div>
+    </div>
+    `;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Your Registration OTP - Rasoi Junction',
+        message: `Your registration OTP is ${otp}. It is valid for 10 minutes.`,
+        html: htmlMessage,
+      });
+    } catch (err) {
+      console.error('Error sending OTP email:', err);
+    }
+
+    return { user, message: 'OTP sent to email. Please verify.' };
+  }
+
+  /**
+   * Verify Registration OTP
+   */
+  async verifyRegistration(email, otp) {
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) {
+      throw new AppError('User not found.', 404);
+    }
+    if (user.isVerified) {
+      throw new AppError('User is already verified.', 400);
+    }
+
+    if (user.registrationOtp !== otp) {
+      throw new AppError('Invalid OTP.', 400);
+    }
+
+    if (user.registrationOtpExpire < Date.now()) {
+      throw new AppError('OTP has expired. Please request a new one.', 400);
+    }
+
+    user.isVerified = true;
+    user.registrationOtp = undefined;
+    user.registrationOtpExpire = undefined;
 
     // Generate tokens
     const { accessToken, refreshToken } = this.generateTokens(user._id);
-
-    // Save refresh token to database
     user.refreshToken = refreshToken;
+
     await user.save({ validateBeforeSave: false });
 
-    // Send welcome email
+    // Send Welcome Email
     try {
       const htmlMessage = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <div style="background-color: #f97316; padding: 30px; text-align: center;">
-          <img src="cid:logo" alt="Rasoi Junction" style="max-height: 80px; width: auto; object-fit: contain; margin-bottom: 10px;" />
           <p style="color: #ffedd5; margin: 5px 0 0 0; font-size: 14px;">Where Tradition Meets Technology</p>
         </div>
         <div style="padding: 40px 30px; background-color: #ffffff; color: #374151;">
           <h2 style="color: #ea580c; margin-top: 0; font-size: 22px;">Welcome to our family, ${user.name}! 🎊</h2>
           <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">We are absolutely thrilled to have you here.</p>
-          <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">Your account has been successfully created. Here are your details:</p>
+          <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">Your account has been successfully verified and created. Here are your details:</p>
           
           <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 25px 0; border-left: 4px solid #f97316;">
             <p style="margin: 0 0 10px 0; font-size: 15px;"><strong>Name:</strong> ${user.name}</p>
@@ -92,18 +173,10 @@ class AuthService {
           <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">Get ready to explore a world of delicious flavors and amazing offers directly from our kitchen to your table.</p>
           
           <div style="text-align: center; margin: 35px 0;">
-            <a href="${env.CLIENT_URL}/menu" style="background-color: #f97316; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 16px;">Explore Our Menu</a>
+            <a href="https://rasoijunction.vercel.app/menu" style="background-color: #f97316; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 16px;">Explore Our Menu</a>
           </div>
           
           <p style="font-size: 15px; line-height: 1.6; color: #6b7280;">If you ever have any questions or need assistance, feel free to reply directly to this email.</p>
-          
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 35px 0;" />
-          <p style="font-size: 15px; color: #6b7280; margin: 0;">Warm Regards,</p>
-          <p style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 5px 0 0 0;">The Rasoi Junction Team</p>
-        </div>
-        <div style="background-color: #111827; padding: 20px; text-align: center; font-size: 13px; color: #9ca3af;">
-          &copy; ${new Date().getFullYear()} Rasoi Junction. All rights reserved.<br/>
-          <a href="${env.CLIENT_URL}" style="color: #f97316; text-decoration: none; margin-top: 5px; display: inline-block;">Visit our website</a>
         </div>
       </div>
       `;
@@ -115,7 +188,7 @@ class AuthService {
         html: htmlMessage, // Send the rich HTML version
       });
     } catch (err) {
-      console.log('Error sending welcome email, but user was created.', err);
+      console.log('Error sending welcome email, but user was verified.', err);
     }
 
     // Remove sensitive fields
@@ -129,7 +202,7 @@ class AuthService {
   /**
    * Login user
    */
-  async login({ email, password }) {
+  async login({ email, password, ip }) {
     // Find user and include password field
     const user = await User.findOne({ email }).select('+password +refreshToken');
     if (!user) {
@@ -137,7 +210,7 @@ class AuthService {
     }
 
     if (user.isBlocked) {
-      throw new AppError('Your account has been blocked. Contact support.', 403);
+      throw new AppError('Your account has been blocked. Please email support with your concern to rasoijunction.admin@gmail.com to unlock your account.', 403);
     }
 
     // Check password
@@ -152,6 +225,7 @@ class AuthService {
     // Update refresh token and last login
     user.refreshToken = refreshToken;
     user.lastLogin = new Date();
+    if (ip) user.lastIpAddress = ip;
     await user.save({ validateBeforeSave: false });
 
     // Remove sensitive fields

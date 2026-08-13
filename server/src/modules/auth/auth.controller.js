@@ -9,20 +9,37 @@ import User from './auth.model.js';
  */
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password, phone, role } = req.body;
-  const { user, accessToken, refreshToken } = await authService.register({
+  const { user, message } = await authService.register({
     name,
     email,
     password,
     phone,
     role,
+    ip: req.ip || req.connection.remoteAddress,
   });
+
+  res.status(200).json({
+    success: true,
+    message: message || 'OTP sent to email. Please verify.',
+    data: { user },
+  });
+});
+
+/**
+ * @desc    Verify Registration OTP
+ * @route   POST /api/auth/verify-registration
+ * @access  Public
+ */
+export const verifyRegistrationOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  const { user, accessToken, refreshToken } = await authService.verifyRegistration(email, otp);
 
   // Set cookies
   authService.setTokenCookies(res, accessToken, refreshToken);
 
-  res.status(201).json({
+  res.status(200).json({
     success: true,
-    message: 'Registration successful! Welcome to Rasoi Junction.',
+    message: 'Registration verified and successful! Welcome to Rasoi Junction.',
     data: { user, accessToken },
   });
 });
@@ -37,6 +54,7 @@ export const login = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await authService.login({
     email,
     password,
+    ip: req.ip || req.connection.remoteAddress,
   });
 
   // Set cookies
@@ -245,6 +263,37 @@ export const updateUserByAdmin = asyncHandler(async (req, res) => {
     success: true,
     message: 'User updated successfully.',
     data: { user },
+  });
+});
+
+/**
+ * @desc    Toggle block status of a user (admin/manager)
+ * @route   PUT /api/auth/users/:id/block
+ * @access  Admin, Manager
+ */
+export const toggleBlockUser = asyncHandler(async (req, res) => {
+  const targetUser = await User.findById(req.params.id);
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+
+  // Managers cannot block admins
+  if (req.user.role === 'manager' && targetUser.role === 'admin') {
+    return res.status(403).json({ success: false, message: 'Managers cannot block administrators.' });
+  }
+
+  // Admin cannot block themselves
+  if (req.user._id.toString() === targetUser._id.toString()) {
+    return res.status(400).json({ success: false, message: 'You cannot block yourself.' });
+  }
+
+  targetUser.isBlocked = !targetUser.isBlocked;
+  await targetUser.save({ validateBeforeSave: false });
+
+  res.status(200).json({
+    success: true,
+    message: targetUser.isBlocked ? 'User blocked successfully.' : 'User unblocked successfully.',
+    isBlocked: targetUser.isBlocked,
   });
 });
 

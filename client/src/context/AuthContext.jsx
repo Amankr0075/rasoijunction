@@ -103,6 +103,12 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const response = await authService.register(userData);
+    // Don't set user or token here, because they are not verified yet.
+    return response;
+  };
+
+  const verifyRegistration = async (email, otp) => {
+    const response = await authService.verifyRegistration({ email, otp });
     const { user: newUser, accessToken } = response.data;
     saveToken(accessToken);
     setUser(newUser);
@@ -130,6 +136,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     login,
     register,
+    verifyRegistration,
     logout,
     updateUser,
   };

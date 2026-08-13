@@ -229,6 +229,18 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
     }
   };
 
+  const handleToggleBlock = async (id, role, currentStatus) => {
+    const action = currentStatus ? 'unblock' : 'block';
+    if (!window.confirm(`Are you sure you want to ${action} this ${role}?`)) return;
+    try {
+      await api.put(`/auth/users/${id}/block`);
+      toast.success(`${role} ${action}ed successfully!`);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || `Failed to ${action} ${role}`);
+    }
+  };
+
   const [showEditUserForm, setShowEditUserForm] = useState(false);
   const [editUserFormData, setEditUserFormData] = useState({ id: '', name: '', email: '', phone: '', role: '', employeeId: '' });
 
@@ -549,6 +561,74 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
     }
   }, [activeTab]);
 
+  // 9. Emails State
+  const [emailLogs, setEmailLogs] = useState([]);
+  const [loadingEmails, setLoadingEmails] = useState(false);
+  const [emailFormData, setEmailFormData] = useState({
+    recipient: '',
+    subject: '',
+    message: '',
+    type: 'Simple'
+  });
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [generatingAi, setGeneratingAi] = useState(false);
+
+  const fetchEmailLogs = async () => {
+    setLoadingEmails(true);
+    try {
+      const res = await api.get('/system/emails/logs');
+      setEmailLogs(res.data || []);
+    } catch (err) {
+      console.error('Failed to load email logs:', err);
+    } finally {
+      setLoadingEmails(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'emails') {
+      fetchEmailLogs();
+    }
+  }, [activeTab]);
+
+  const handleGenerateAiEmail = async () => {
+    if (!aiPrompt) {
+      toast.error('Please enter a prompt for the AI.');
+      return;
+    }
+    setGeneratingAi(true);
+    try {
+      const res = await api.post('/system/emails/generate', { prompt: aiPrompt });
+      setEmailFormData(prev => ({
+        ...prev,
+        subject: res.subject || prev.subject,
+        message: res.message || prev.message
+      }));
+      toast.success('AI generated email successfully!');
+    } catch (err) {
+      toast.error('Failed to generate AI email.');
+    } finally {
+      setGeneratingAi(false);
+    }
+  };
+
+  const handleSendEmail = async (e) => {
+    e.preventDefault();
+    if (!emailFormData.recipient || !emailFormData.subject || !emailFormData.message) {
+      toast.error('Please fill in all email fields.');
+      return;
+    }
+    try {
+      await api.post('/system/emails/send', emailFormData);
+      toast.success('Email sent successfully!');
+      setEmailFormData({ recipient: '', subject: '', message: '', type: 'Simple' });
+      setAiPrompt('');
+      fetchEmailLogs();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send email.');
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -576,6 +656,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
             { id: 'feedback', label: 'Customer Feedback', icon: HiOutlineChatAlt2 },
             { id: 'notifications', label: 'System Notifications', icon: HiOutlineBell },
             { id: 'contacts', label: 'Contact Messages', icon: HiOutlineMail },
+            { id: 'emails', label: 'Email Center', icon: HiOutlineSpeakerphone },
           ].filter(tab => {
             if (user?.role === 'staff') {
               return tab.id === 'reviews';
@@ -739,7 +820,9 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                   { header: 'Email Address', field: 'email' },
                   { header: 'Phone Number', field: 'phone' },
                   { header: 'Orders Count', field: 'totalOrders' },
+                  { header: 'IP Address', field: 'lastIpAddress', render: (ip) => ip ? <span className="font-mono text-xs bg-gray-100 p-1 rounded">{ip}</span> : 'N/A' },
                   { header: 'Loyalty Points', field: 'loyaltyPoints' },
+                  { header: 'Status', field: 'isBlocked', render: (blocked) => <Badge variant={blocked ? 'error' : 'success'} dot>{blocked ? 'Blocked' : 'Active'}</Badge> },
                   {
                     header: 'Actions',
                     field: '_id',
@@ -765,6 +848,14 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                               }}
                             >
                               <HiOutlinePencilAlt className="w-4 h-4 mr-1 inline" /> Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`${row.isBlocked ? 'text-green-500 hover:text-green-700' : 'text-orange-500 hover:text-orange-700'} font-bold`}
+                              onClick={() => handleToggleBlock(row._id || row.id, 'Customer', row.isBlocked)}
+                            >
+                              {row.isBlocked ? 'Unblock' : 'Block'}
                             </Button>
                             <Button
                               variant="ghost"
@@ -801,6 +892,8 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                   { header: 'Operational Role', field: 'role' },
                   { header: 'Employee ID', field: 'employeeId' },
                   { header: 'Contact Number', field: 'phone' },
+                  { header: 'IP Address', field: 'lastIpAddress', render: (ip) => ip ? <span className="font-mono text-xs bg-gray-100 p-1 rounded">{ip}</span> : 'N/A' },
+                  { header: 'Status', field: 'isBlocked', render: (blocked) => <Badge variant={blocked ? 'error' : 'success'} dot>{blocked ? 'Blocked' : 'Active'}</Badge> },
                   { header: 'Shift Window', field: 'shift', render: (s) => <span className="text-sm font-semibold">{s || 'Not Assigned'}</span> },
                   {
                     header: 'Actions',
@@ -876,6 +969,14 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                           }}
                         >
                           Pay Salary
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`${row.isBlocked ? 'text-green-500 hover:text-green-700' : 'text-orange-500 hover:text-orange-700'} font-bold`}
+                          onClick={() => handleToggleBlock(row._id || row.id, 'Staff', row.isBlocked)}
+                        >
+                          {row.isBlocked ? 'Unblock' : 'Block'}
                         </Button>
                         <Button
                           variant="ghost"
@@ -1139,6 +1240,149 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                 data={contacts}
               />
             </Card>
+          )}
+          )}
+
+          {activeTab === 'emails' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="p-6 lg:col-span-1 border-primary-100 dark:border-primary-900/30 bg-primary-50/10 dark:bg-primary-900/5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-bl-full blur-2xl"></div>
+                <h3 className="text-lg font-bold text-dark-800 dark:text-white font-display flex items-center mb-6">
+                  <HiOutlineSpeakerphone className="w-5 h-5 mr-2 text-primary-500" /> New Email
+                </h3>
+                <form onSubmit={handleSendEmail} className="space-y-4 relative z-10">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Email Type</label>
+                    <select
+                      className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm focus:outline-none focus:border-primary-500"
+                      value={emailFormData.type}
+                      onChange={(e) => setEmailFormData({ ...emailFormData, type: e.target.value })}
+                    >
+                      <option value="Simple">Simple Email</option>
+                      <option value="Promotional">Promotional Email</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Recipient Address</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="user@example.com"
+                      value={emailFormData.recipient}
+                      onChange={(e) => setEmailFormData({ ...emailFormData, recipient: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm focus:outline-none focus:border-primary-500"
+                    />
+                  </div>
+                  {emailFormData.type === 'Promotional' && (
+                    <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-lg border border-primary-100 dark:border-primary-800/30">
+                      <label className="block text-xs font-bold text-primary-700 dark:text-primary-400 mb-1 flex items-center">
+                        <span className="mr-1">✨</span> AI Promotional Generator
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="What's the promotion about?"
+                          value={aiPrompt}
+                          onChange={(e) => setAiPrompt(e.target.value)}
+                          className="flex-1 px-3 py-1.5 bg-white dark:bg-dark-800 border border-primary-200 dark:border-primary-800/50 rounded-md text-xs focus:outline-none focus:border-primary-500"
+                        />
+                        <Button 
+                          type="button" 
+                          variant="primary" 
+                          size="sm"
+                          onClick={handleGenerateAiEmail}
+                          disabled={generatingAi || !aiPrompt}
+                          className="shadow-sm shadow-primary-500/30"
+                        >
+                          {generatingAi ? '...' : 'Auto-Generate'}
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-primary-600 dark:text-primary-400/70 mt-2 font-medium">It automatically drafts a professional subject & body!</p>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Subject</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Email subject..."
+                      value={emailFormData.subject}
+                      onChange={(e) => setEmailFormData({ ...emailFormData, subject: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm focus:outline-none focus:border-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Message Body</label>
+                    <textarea
+                      required
+                      rows="6"
+                      placeholder="Type your message here..."
+                      value={emailFormData.message}
+                      onChange={(e) => setEmailFormData({ ...emailFormData, message: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 resize-y"
+                    ></textarea>
+                  </div>
+                  <Button type="submit" variant="primary" className="w-full shadow-lg shadow-primary-500/20 py-2.5 rounded-xl font-bold">
+                    Send Mail
+                  </Button>
+                </form>
+              </Card>
+
+              <Card className="p-6 lg:col-span-2">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-dark-800 dark:text-white font-display">Email Activity Log</h3>
+                  <Button variant="outline" size="sm" onClick={fetchEmailLogs}>
+                    Refresh Logs
+                  </Button>
+                </div>
+                <div className="max-h-[600px] overflow-y-auto">
+                  <Table
+                    columns={[
+                      { 
+                        header: 'Recipient', 
+                        field: 'recipient', 
+                        render: (val) => <span className="font-semibold text-sm">{val}</span> 
+                      },
+                      { 
+                        header: 'Type', 
+                        field: 'type', 
+                        render: (val) => (
+                          <Badge variant={val === 'Promotional' ? 'success' : 'primary'}>
+                            {val}
+                          </Badge>
+                        ) 
+                      },
+                      { 
+                        header: 'Subject & Preview', 
+                        field: 'subject', 
+                        render: (val, row) => (
+                          <div className="max-w-[200px]">
+                            <p className="font-semibold text-xs truncate" title={val}>{val}</p>
+                            <p className="text-[10px] text-gray-500 truncate" title={row.message}>{row.message}</p>
+                          </div>
+                        ) 
+                      },
+                      { 
+                        header: 'Sent Date', 
+                        field: 'sentAt', 
+                        render: (d) => <span className="text-xs text-gray-500">{d ? new Date(d).toLocaleString() : ''}</span> 
+                      },
+                      { 
+                        header: 'Sent By', 
+                        field: 'sentBy', 
+                        render: (val) => <span className="text-xs">{val ? (val.name || val.email) : 'System'}</span> 
+                      }
+                    ]}
+                    data={emailLogs}
+                  />
+                  {emailLogs.length === 0 && !loadingEmails && (
+                    <div className="text-center py-8 text-gray-500 text-sm">
+                      No emails have been sent yet.
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
           )}
         </div>
       </div>

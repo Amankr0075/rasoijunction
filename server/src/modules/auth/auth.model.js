@@ -97,7 +97,13 @@ const userSchema = new mongoose.Schema(
     resetPasswordOtpExpire: Date,
     emailVerificationToken: String,
     emailVerificationExpire: Date,
+    registrationOtp: String,
+    registrationOtpExpire: Date,
     lastLogin: Date,
+    lastIpAddress: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,

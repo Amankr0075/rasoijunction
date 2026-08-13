@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   register,
+  verifyRegistrationOtp,
   login,
   logout,
   refreshToken,
@@ -16,6 +17,7 @@ import {
   resetPasswordByName,
   updateAttendance,
   recordSalaryPayment,
+  toggleBlockUser,
 } from './auth.controller.js';
 import { protect } from '../../middleware/auth.js';
 import authorize from '../../middleware/rbac.js';
@@ -34,6 +36,7 @@ const router = Router();
 
 // Public routes
 router.post('/register', authLimiter, registerValidator, validate, register);
+router.post('/verify-registration', authLimiter, verifyRegistrationOtp);
 router.post('/login', authLimiter, loginValidator, validate, login);
 router.post('/forgot-password', passwordResetLimiter, forgotPasswordValidator, validate, forgotPassword);
 router.post('/reset-password', passwordResetLimiter, resetPasswordValidator, validate, resetPassword);
@@ -52,6 +55,7 @@ router.post('/users', protect, authorize('admin', 'manager'), createUser);
 router.put('/users/:id', protect, authorize('admin', 'manager'), updateUserByAdmin);
 router.put('/users/:id/attendance', protect, authorize('admin', 'manager'), updateAttendance);
 router.post('/users/:id/salary-payment', protect, authorize('admin', 'manager'), recordSalaryPayment);
+router.put('/users/:id/block', protect, authorize('admin', 'manager'), toggleBlockUser);
 router.delete('/users/:id', protect, authorize('admin', 'manager'), deleteUser);
 
 export default router;

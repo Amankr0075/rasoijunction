@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
@@ -12,11 +12,19 @@ import { TermsContent } from '../public/TermsOfServicePage';
 import { PrivacyContent } from '../public/PrivacyPolicyPage';
 
 const RegisterPage = () => {
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, verifyRegistration } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  
+  // 2-Step Registration State
+  const [step, setStep] = useState(1);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [resendTimer, setResendTimer] = useState(120);
+  const [isResendDisabled, setIsResendDisabled] = useState(true);
+
   const {
     register,
     handleSubmit,
@@ -25,6 +33,19 @@ const RegisterPage = () => {
   } = useForm();
 
   const password = watch('password');
+
+  // Timer logic for Resend OTP
+  useEffect(() => {
+    let interval;
+    if (step === 2 && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (resendTimer === 0) {
+      setIsResendDisabled(false);
+    }
+    return () => clearInterval(interval);
+  }, [step, resendTimer]);
 
   const onSubmit = async (data) => {
     if (data.password !== data.confirmPassword) {
@@ -35,10 +56,47 @@ const RegisterPage = () => {
     try {
       const { confirmPassword, ...registerData } = data;
       await registerUser(registerData);
-      toast.success('Account created successfully! Welcome to Rasoi Junction 🎉');
-      navigate('/customer/dashboard');
+      toast.success('OTP sent to your email! Please verify.');
+      setRegisteredEmail(data.email);
+      setStep(2);
+      setResendTimer(120);
+      setIsResendDisabled(true);
     } catch (error) {
       toast.error(error.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (otp.length !== 6) {
+      toast.error('Please enter a valid 6-digit OTP');
+      return;
+    }
+    setLoading(true);
+    try {
+      await verifyRegistration(registeredEmail, otp);
+      toast.success('Account created successfully! Welcome to Rasoi Junction 🎉');
+      navigate('/'); // Redirect to homepage
+    } catch (error) {
+      toast.error(error.message || 'Invalid or expired OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setLoading(true);
+    try {
+      const data = watch(); // Get form data
+      const { confirmPassword, ...registerData } = data;
+      await registerUser(registerData);
+      toast.success('A new OTP has been sent to your email.');
+      setResendTimer(120);
+      setIsResendDisabled(true);
+    } catch (error) {
+      toast.error(error.message || 'Failed to resend OTP.');
     } finally {
       setLoading(false);
     }
@@ -106,16 +164,17 @@ const RegisterPage = () => {
               <img src="/logo.png" alt="Rasoi Junction" className="relative h-16 w-16 mx-auto rounded-full object-cover border-2 border-white/20 shadow-lg" />
             </div>
             <h2 className="text-3xl font-bold font-display text-white mb-1 tracking-tight">
-              Create Your Account
+              {step === 1 ? 'Create Your Account' : 'Verify Email'}
             </h2>
             <p className="text-amber-100/70 text-sm font-medium tracking-wide">
-              Where Tradition Meets Technology
+              {step === 1 ? 'Where Tradition Meets Technology' : `OTP sent to ${registeredEmail}`}
             </p>
           </motion.div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <motion.div variants={fadeInUp}>
+          {step === 1 ? (
+            /* Step 1 Form */
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <motion.div variants={fadeInUp}>
               <Input
                 label="Full Name"
                 name="name"
@@ -201,29 +260,78 @@ const RegisterPage = () => {
               </div>
             </motion.div>
 
-            <motion.div variants={fadeInUp} className="pt-2">
-              <Button
-                type="submit"
-                size="lg"
-                loading={loading}
-                className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] transition-all duration-300 border border-white/10"
-              >
-                CREATE ACCOUNT
-              </Button>
-            </motion.div>
-          </form>
+              <motion.div variants={fadeInUp} className="pt-2">
+                <Button
+                  type="submit"
+                  size="lg"
+                  loading={loading}
+                  className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] transition-all duration-300 border border-white/10"
+                >
+                  CREATE ACCOUNT
+                </Button>
+              </motion.div>
+            </form>
+          ) : (
+            /* Step 2 Form */
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <motion.div variants={fadeInUp}>
+                <div className="flex flex-col space-y-2">
+                  <label className="text-sm font-medium text-white">Enter 6-Digit OTP</label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="------"
+                    className="w-full bg-white/5 border border-white/10 text-white placeholder-white/30 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-center text-2xl tracking-widest transition-all"
+                    required
+                  />
+                </div>
+              </motion.div>
+              
+              <motion.div variants={fadeInUp} className="pt-2">
+                <Button
+                  type="submit"
+                  size="lg"
+                  loading={loading}
+                  disabled={otp.length !== 6}
+                  className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] transition-all duration-300 border border-white/10"
+                >
+                  VERIFY EMAIL
+                </Button>
+              </motion.div>
+
+              <motion.div variants={fadeInUp} className="text-center pt-4 border-t border-white/10">
+                <p className="text-sm text-white/60 mb-3">Didn't receive the code?</p>
+                {isResendDisabled ? (
+                  <p className="text-sm text-amber-400 font-medium">Resend OTP in {Math.floor(resendTimer / 60)}:{(resendTimer % 60).toString().padStart(2, '0')}</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                    className="text-sm text-amber-400 hover:text-amber-300 font-bold hover:underline underline-offset-4 transition-all"
+                  >
+                    Resend OTP
+                  </button>
+                )}
+              </motion.div>
+            </form>
+          )}
 
           {/* Login Link */}
-          <motion.div variants={fadeInUp} className="mt-6 text-center border-t border-white/10 pt-5">
-            <p className="text-sm text-white/60">
-              Already have an account?{' '}
-              <Link
-                to="/login"
-                className="text-amber-400 hover:text-amber-300 font-bold hover:underline underline-offset-4 transition-all"
-              >
-                Login              </Link>
-            </p>
-          </motion.div>
+          {step === 1 && (
+            <motion.div variants={fadeInUp} className="mt-6 text-center border-t border-white/10 pt-5">
+              <p className="text-sm text-white/60">
+                Already have an account?{' '}
+                <Link
+                  to="/login"
+                  className="text-amber-400 hover:text-amber-300 font-bold hover:underline underline-offset-4 transition-all"
+                >
+                  Login              </Link>
+              </p>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     {/* Modals */}
