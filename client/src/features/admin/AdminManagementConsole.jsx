@@ -244,6 +244,18 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
   const [showEditUserForm, setShowEditUserForm] = useState(false);
   const [editUserFormData, setEditUserFormData] = useState({ id: '', name: '', email: '', phone: '', role: '', employeeId: '' });
 
+  const handleToggleMaintenanceAccess = async (id, role, currentAccess) => {
+    const action = currentAccess ? 'revoke' : 'grant';
+    if (!window.confirm(`Are you sure you want to ${action} maintenance access for this ${role}?`)) return;
+    try {
+      await api.put(`/auth/users/${id}/maintenance-access`);
+      toast.success(`Maintenance access ${action}ed successfully!`);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || `Failed to ${action} maintenance access for ${role}`);
+    }
+  };
+
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [selectedAttendanceStaff, setSelectedAttendanceStaff] = useState(null);
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
@@ -385,6 +397,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [broadcastData, setBroadcastData] = useState({ subject: '', message: '' });
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [broadcastAiPrompt, setBroadcastAiPrompt] = useState('');
 
   const handleBroadcast = async (e) => {
     e.preventDefault();
@@ -422,6 +435,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
 
   // 8. Maintenance Mode State
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [maintenanceDuration, setMaintenanceDuration] = useState('0');
 
   const fetchMaintenanceStatus = async () => {
     try {
@@ -437,7 +451,11 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
     if (!window.confirm(`Are you sure you want to ${action} Maintenance Mode?`)) return;
 
     try {
-      const res = await api.post('/system/maintenance/toggle', { enabled: !isMaintenanceMode });
+      const durationMinutes = parseInt(maintenanceDuration, 10);
+      const res = await api.post('/system/maintenance/toggle', { 
+        enabled: !isMaintenanceMode,
+        durationMinutes: durationMinutes > 0 ? durationMinutes : null 
+      });
       setIsMaintenanceMode(res.isMaintenanceMode);
       toast.success(res.message);
     } catch (err) {
@@ -607,6 +625,75 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
       toast.success('AI generated email successfully!');
     } catch (err) {
       toast.error('Failed to generate AI email.');
+    } finally {
+      setGeneratingAi(false);
+    }
+  };
+
+  const handleEnhanceAiEmail = async () => {
+    if (!emailFormData.subject && !emailFormData.message) {
+      toast.error('Please enter a subject or message to enhance.');
+      return;
+    }
+    setGeneratingAi(true);
+    try {
+      const res = await api.post('/system/emails/enhance', { 
+        subject: emailFormData.subject, 
+        message: emailFormData.message 
+      });
+      setEmailFormData(prev => ({
+        ...prev,
+        subject: res.subject || prev.subject,
+        message: res.message || prev.message
+      }));
+      toast.success('AI enhanced email successfully!');
+    } catch (err) {
+      toast.error('Failed to enhance email with AI.');
+    } finally {
+      setGeneratingAi(false);
+    }
+  };
+
+  const handleGenerateAiBroadcast = async () => {
+    if (!broadcastAiPrompt) {
+      toast.error('Please enter a prompt for the AI.');
+      return;
+    }
+    setGeneratingAi(true);
+    try {
+      const res = await api.post('/system/emails/generate', { prompt: broadcastAiPrompt });
+      setBroadcastData(prev => ({
+        ...prev,
+        subject: res.subject || prev.subject,
+        message: res.message || prev.message
+      }));
+      toast.success('AI generated broadcast successfully!');
+    } catch (err) {
+      toast.error('Failed to generate AI broadcast.');
+    } finally {
+      setGeneratingAi(false);
+    }
+  };
+
+  const handleEnhanceAiBroadcast = async () => {
+    if (!broadcastData.subject && !broadcastData.message) {
+      toast.error('Please enter a subject or message to enhance.');
+      return;
+    }
+    setGeneratingAi(true);
+    try {
+      const res = await api.post('/system/emails/enhance', { 
+        subject: broadcastData.subject, 
+        message: broadcastData.message 
+      });
+      setBroadcastData(prev => ({
+        ...prev,
+        subject: res.subject || prev.subject,
+        message: res.message || prev.message
+      }));
+      toast.success('AI enhanced broadcast successfully!');
+    } catch (err) {
+      toast.error('Failed to enhance broadcast with AI.');
     } finally {
       setGeneratingAi(false);
     }
@@ -865,6 +952,16 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                             >
                               <HiOutlineTrash className="w-4 h-4 mr-1 inline" /> Delete
                             </Button>
+                            {user?.role === 'admin' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`${row.hasMaintenanceAccess ? 'text-purple-500 hover:text-purple-700' : 'text-gray-500 hover:text-gray-700'} font-bold`}
+                                onClick={() => handleToggleMaintenanceAccess(row._id || row.id, 'Customer', row.hasMaintenanceAccess)}
+                              >
+                                {row.hasMaintenanceAccess ? 'Revoke Maint. Access' : 'Grant Maint. Access'}
+                              </Button>
+                            )}
                           </>
                         ) : (
                           <span className="text-xs text-gray-400 italic">View Only</span>
@@ -986,6 +1083,16 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                         >
                           <HiOutlineTrash className="w-4 h-4 mr-1 inline" /> Delete
                         </Button>
+                        {user?.role === 'admin' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`${row.hasMaintenanceAccess ? 'text-purple-500 hover:text-purple-700' : 'text-gray-500 hover:text-gray-700'} font-bold`}
+                            onClick={() => handleToggleMaintenanceAccess(row._id || row.id, 'Staff', row.hasMaintenanceAccess)}
+                          >
+                            {row.hasMaintenanceAccess ? 'Revoke Maint. Access' : 'Grant Maint. Access'}
+                          </Button>
+                        )}
                       </div>
                     ),
                   },
@@ -1070,19 +1177,34 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                   <h3 className="text-lg font-bold text-dark-800 dark:text-white">System Settings & Logs</h3>
                   <p className="text-xs text-gray-500">Manage global platform state and view automated system logs.</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   {user?.role === 'admin' && (
-                    <Button
-                      variant={isMaintenanceMode ? "danger" : "outline"}
-                      size="sm"
-                      onClick={handleToggleMaintenance}
-                      className={isMaintenanceMode ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100" : ""}
-                    >
-                      <HiOutlineCog className="w-4 h-4 mr-1 inline" />
-                      {isMaintenanceMode ? 'Maintenance Mode: ON' : 'Enable Maintenance'}
-                    </Button>
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-dark-900 p-1 rounded-lg border border-gray-200 dark:border-dark-700">
+                      {!isMaintenanceMode && (
+                        <select 
+                          value={maintenanceDuration} 
+                          onChange={(e) => setMaintenanceDuration(e.target.value)}
+                          className="bg-transparent text-xs text-gray-600 dark:text-gray-300 outline-none cursor-pointer pr-1"
+                        >
+                          <option value="0">Indefinite</option>
+                          <option value="30">30 mins</option>
+                          <option value="60">1 hour</option>
+                          <option value="120">2 hours</option>
+                          <option value="720">12 hours</option>
+                        </select>
+                      )}
+                      <Button
+                        variant={isMaintenanceMode ? "danger" : "primary"}
+                        size="sm"
+                        onClick={handleToggleMaintenance}
+                        className={isMaintenanceMode ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100" : ""}
+                      >
+                        <HiOutlineCog className="w-4 h-4 mr-1 inline" />
+                        {isMaintenanceMode ? 'Maintenance Mode: ON' : 'Enable Maintenance'}
+                      </Button>
+                    </div>
                   )}
-                  <Button variant="primary" size="sm" onClick={() => setShowBroadcastModal(true)}>
+                  <Button variant="outline" size="sm" onClick={() => setShowBroadcastModal(true)}>
                     <HiOutlineSpeakerphone className="w-4 h-4 mr-1 inline" /> Broadcast
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleMarkAllNotificationsRead}>
@@ -1241,7 +1363,7 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
               />
             </Card>
           )}
-          )}
+
 
           {activeTab === 'emails' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1273,33 +1395,31 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                       className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm focus:outline-none focus:border-primary-500"
                     />
                   </div>
-                  {emailFormData.type === 'Promotional' && (
-                    <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-lg border border-primary-100 dark:border-primary-800/30">
-                      <label className="block text-xs font-bold text-primary-700 dark:text-primary-400 mb-1 flex items-center">
-                        <span className="mr-1">✨</span> AI Promotional Generator
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="What's the promotion about?"
-                          value={aiPrompt}
-                          onChange={(e) => setAiPrompt(e.target.value)}
-                          className="flex-1 px-3 py-1.5 bg-white dark:bg-dark-800 border border-primary-200 dark:border-primary-800/50 rounded-md text-xs focus:outline-none focus:border-primary-500"
-                        />
-                        <Button 
-                          type="button" 
-                          variant="primary" 
-                          size="sm"
-                          onClick={handleGenerateAiEmail}
-                          disabled={generatingAi || !aiPrompt}
-                          className="shadow-sm shadow-primary-500/30"
-                        >
-                          {generatingAi ? '...' : 'Auto-Generate'}
-                        </Button>
-                      </div>
-                      <p className="text-[10px] text-primary-600 dark:text-primary-400/70 mt-2 font-medium">It automatically drafts a professional subject & body!</p>
+                  <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-lg border border-primary-100 dark:border-primary-800/30">
+                    <label className="block text-xs font-bold text-primary-700 dark:text-primary-400 mb-1 flex items-center">
+                      <span className="mr-1">✨</span> AI Email Generator
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="What should the email be about?"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        className="flex-1 px-3 py-1.5 bg-white dark:bg-dark-800 border border-primary-200 dark:border-primary-800/50 rounded-md text-xs focus:outline-none focus:border-primary-500"
+                      />
+                      <Button 
+                        type="button" 
+                        variant="primary" 
+                        size="sm"
+                        onClick={handleGenerateAiEmail}
+                        disabled={generatingAi || !aiPrompt}
+                        className="shadow-sm shadow-primary-500/30"
+                      >
+                        {generatingAi ? '...' : 'Auto-Generate'}
+                      </Button>
                     </div>
-                  )}
+                    <p className="text-[10px] text-primary-600 dark:text-primary-400/70 mt-2 font-medium">It automatically drafts a professional subject & body!</p>
+                  </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 mb-1">Subject</label>
                     <input
@@ -1312,7 +1432,17 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">Message Body</label>
+                    <div className="flex justify-between items-end mb-1">
+                      <label className="block text-xs font-semibold text-gray-500">Message Body</label>
+                      <button 
+                        type="button" 
+                        onClick={handleEnhanceAiEmail}
+                        disabled={generatingAi || (!emailFormData.subject && !emailFormData.message)}
+                        className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-50 transition-colors flex items-center"
+                      >
+                        {generatingAi ? '✨ Polishing...' : '✨ Polish with AI'}
+                      </button>
+                    </div>
                     <textarea
                       required
                       rows="6"
@@ -1712,6 +1842,31 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
               </h3>
             </div>
             <form onSubmit={handleBroadcast} className="p-4 space-y-4">
+              <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-lg border border-primary-100 dark:border-primary-800/30">
+                <label className="block text-xs font-bold text-primary-700 dark:text-primary-400 mb-1 flex items-center">
+                  <span className="mr-1">✨</span> AI Broadcast Generator
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="What should the broadcast be about?"
+                    value={broadcastAiPrompt}
+                    onChange={(e) => setBroadcastAiPrompt(e.target.value)}
+                    className="flex-1 px-3 py-1.5 bg-white dark:bg-dark-800 border border-primary-200 dark:border-primary-800/50 rounded-md text-xs focus:outline-none focus:border-primary-500"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="primary" 
+                    size="sm"
+                    onClick={handleGenerateAiBroadcast}
+                    disabled={generatingAi || !broadcastAiPrompt}
+                    className="shadow-sm shadow-primary-500/30"
+                  >
+                    {generatingAi ? '...' : 'Auto-Generate'}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-primary-600 dark:text-primary-400/70 mt-2 font-medium">Automatically drafts a professional subject & body!</p>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Subject
@@ -1725,9 +1880,19 @@ const AdminManagementConsole = ({ defaultTab = 'inventory' }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Message
-                </label>
+                <div className="flex justify-between items-end mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Message
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={handleEnhanceAiBroadcast}
+                    disabled={generatingAi || (!broadcastData.subject && !broadcastData.message)}
+                    className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 disabled:opacity-50 transition-colors flex items-center"
+                  >
+                    {generatingAi ? '✨ Polishing...' : '✨ Polish with AI'}
+                  </button>
+                </div>
                 <textarea
                   className="w-full bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-xl px-4 py-2 text-dark-900 dark:text-white"
                   rows="4"

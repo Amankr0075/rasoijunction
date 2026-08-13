@@ -32,6 +32,7 @@ export const register = asyncHandler(async (req, res) => {
  */
 export const verifyRegistrationOtp = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
+  console.log("verifyRegistrationOtp called with email:", email, "otp:", otp);
   const { user, accessToken, refreshToken } = await authService.verifyRegistration(email, otp);
 
   // Set cookies
@@ -288,12 +289,33 @@ export const toggleBlockUser = asyncHandler(async (req, res) => {
   }
 
   targetUser.isBlocked = !targetUser.isBlocked;
-  await targetUser.save({ validateBeforeSave: false });
+  await targetUser.save();
 
   res.status(200).json({
     success: true,
-    message: targetUser.isBlocked ? 'User blocked successfully.' : 'User unblocked successfully.',
-    isBlocked: targetUser.isBlocked,
+    message: `User has been ${targetUser.isBlocked ? 'blocked' : 'unblocked'} successfully.`,
+    isBlocked: targetUser.isBlocked
+  });
+});
+
+/**
+ * @desc    Toggle maintenance access for a user
+ * @route   PUT /api/auth/users/:id/maintenance-access
+ * @access  Admin only
+ */
+export const toggleMaintenanceAccess = asyncHandler(async (req, res) => {
+  const targetUser = await User.findById(req.params.id);
+  if (!targetUser) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+
+  targetUser.hasMaintenanceAccess = !targetUser.hasMaintenanceAccess;
+  await targetUser.save();
+
+  res.status(200).json({
+    success: true,
+    message: `Maintenance access has been ${targetUser.hasMaintenanceAccess ? 'granted' : 'revoked'} for this user.`,
+    hasMaintenanceAccess: targetUser.hasMaintenanceAccess
   });
 });
 

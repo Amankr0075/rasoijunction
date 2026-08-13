@@ -1,11 +1,20 @@
 export const maintenanceMiddleware = (req, res, next) => {
+  if (global.isMaintenanceMode && global.maintenanceEndTime) {
+    if (Date.now() > global.maintenanceEndTime) {
+      // Auto-disable maintenance mode
+      global.isMaintenanceMode = false;
+      global.maintenanceEndTime = null;
+      return next();
+    }
+  }
+
   // If maintenance mode is off, proceed normally
   if (!global.isMaintenanceMode) {
     return next();
   }
 
-  // Bypass maintenance mode if the requester is an admin
-  if (req.user && req.user.role === 'admin') {
+  // Bypass maintenance mode if the requester is an admin OR has special access
+  if (req.user && (req.user.role === 'admin' || req.user.hasMaintenanceAccess)) {
     return next();
   }
 

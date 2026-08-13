@@ -18,6 +18,7 @@ import {
   updateAttendance,
   recordSalaryPayment,
   toggleBlockUser,
+  toggleMaintenanceAccess,
 } from './auth.controller.js';
 import { protect } from '../../middleware/auth.js';
 import authorize from '../../middleware/rbac.js';
@@ -56,6 +57,7 @@ router.put('/users/:id', protect, authorize('admin', 'manager'), updateUserByAdm
 router.put('/users/:id/attendance', protect, authorize('admin', 'manager'), updateAttendance);
 router.post('/users/:id/salary-payment', protect, authorize('admin', 'manager'), recordSalaryPayment);
 router.put('/users/:id/block', protect, authorize('admin', 'manager'), toggleBlockUser);
+router.put('/users/:id/maintenance-access', protect, authorize('admin'), toggleMaintenanceAccess);
 router.delete('/users/:id', protect, authorize('admin', 'manager'), deleteUser);
 
 export default router;

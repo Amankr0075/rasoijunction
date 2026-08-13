@@ -127,7 +127,8 @@ class AuthService {
    * Verify Registration OTP
    */
   async verifyRegistration(email, otp) {
-    const user = await User.findOne({ email }).select('+password');
+    if (!email) throw new AppError('Email is required.', 400);
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+password');
     if (!user) {
       throw new AppError('User not found.', 404);
     }

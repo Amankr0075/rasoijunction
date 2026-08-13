@@ -8,9 +8,14 @@ import env from '../../config/env.js';
 // @route   GET /api/system/maintenance/status
 // @access  Public
 export const getMaintenanceStatus = asyncHandler(async (req, res) => {
+  if (global.isMaintenanceMode && global.maintenanceEndTime && Date.now() > global.maintenanceEndTime) {
+    global.isMaintenanceMode = false;
+    global.maintenanceEndTime = null;
+  }
   res.status(200).json({
     success: true,
     isMaintenanceMode: !!global.isMaintenanceMode,
+    endTime: global.maintenanceEndTime || null,
   });
 });
 
@@ -18,16 +23,23 @@ export const getMaintenanceStatus = asyncHandler(async (req, res) => {
 // @route   POST /api/system/maintenance/toggle
 // @access  Admin/Manager
 export const toggleMaintenanceMode = asyncHandler(async (req, res) => {
-  const { enabled } = req.body;
+  const { enabled, durationMinutes } = req.body;
   
   global.isMaintenanceMode = enabled === true;
+  
+  if (enabled && durationMinutes) {
+    global.maintenanceEndTime = Date.now() + durationMinutes * 60000;
+  } else {
+    global.maintenanceEndTime = null;
+  }
   
   res.status(200).json({
     success: true,
     message: global.isMaintenanceMode 
-      ? 'System is now in Maintenance Mode. Normal traffic is blocked.' 
+      ? `System is now in Maintenance Mode. ${durationMinutes ? `(Auto-disables in ${durationMinutes} mins)` : ''}` 
       : 'Maintenance Mode disabled. System is operating normally.',
     isMaintenanceMode: global.isMaintenanceMode,
+    endTime: global.maintenanceEndTime,
   });
 });
 
@@ -155,5 +167,53 @@ export const generatePromotionalEmail = asyncHandler(async (req, res) => {
       subject: `Special Promotion: ${prompt}`,
       message: `Dear Valued Customer,\n\nWe are excited to announce a special promotion for: ${prompt}.\n\nDon't miss out on this fantastic opportunity! Come dine with us at Rasoi Junction and experience the magic of our culinary delights.\n\nWarm regards,\nThe Rasoi Junction Team`
     });
+  }
+});
+
+// @desc    Enhance email text using AI
+// @route   POST /api/system/emails/enhance
+// @access  Admin only
+export const enhanceEmail = asyncHandler(async (req, res) => {
+  const { subject, message } = req.body;
+  
+  if (!subject && !message) {
+    return res.status(400).json({ success: false, message: 'Please provide subject or message body to enhance.' });
+  }
+
+  try {
+    const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(400).json({ success: false, message: 'AI API Key is not configured.' });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
+    
+    let enhancedSubject = subject;
+    let enhancedMessage = message;
+
+    if (message) {
+      const responseMessage = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: `I am writing an email from Rasoi Junction. Please rewrite the following email body to sound highly professional, polite, engaging, and grammatically perfect. Ensure the tone is appropriate for a reputable restaurant communicating with a customer. Return only the enhanced email body, ready to be sent.\n\nDraft Email Body:\n${message}`
+      });
+      enhancedMessage = responseMessage.text;
+    }
+
+    if (subject) {
+      const responseSubject = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: `I am writing an email from Rasoi Junction. Please rewrite the following email subject line to be catchy, professional, and clear. Return only the subject line text without any quotes or extra words.\n\nDraft Subject:\n${subject}`
+      });
+      enhancedSubject = responseSubject.text;
+    }
+
+    res.status(200).json({
+      success: true,
+      subject: enhancedSubject,
+      message: enhancedMessage
+    });
+  } catch (error) {
+    console.error('AI Email Enhance Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to enhance email with AI.' });
   }
 });

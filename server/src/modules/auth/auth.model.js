@@ -104,6 +104,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    hasMaintenanceAccess: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

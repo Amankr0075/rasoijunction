@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 
 const MaintenancePage = () => {
   const [isChecking, setIsChecking] = useState(false);
+  const [endTime, setEndTime] = useState(null);
+  const [timeRemaining, setTimeRemaining] = useState('');
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -16,8 +18,9 @@ const MaintenancePage = () => {
     try {
       const res = await api.get('/system/maintenance/status');
       if (!res.isMaintenanceMode) {
-        // System is back up, redirect to home
         navigate('/');
+      } else if (res.endTime) {
+        setEndTime(res.endTime);
       }
     } catch (err) {
       // Still in maintenance
@@ -25,6 +28,38 @@ const MaintenancePage = () => {
       setIsChecking(false);
     }
   };
+
+  useEffect(() => {
+    // Initial check
+    checkStatus();
+    // Check every 30 seconds automatically
+    const interval = setInterval(checkStatus, 30000);
+    return () => clearInterval(interval);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!endTime) return;
+    const updateCountdown = () => {
+      const now = Date.now();
+      const diff = endTime - now;
+      if (diff <= 0) {
+        setTimeRemaining('Any moment now...');
+        checkStatus(); // Force a check when timer hits 0
+      } else {
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        if (h > 0) {
+          setTimeRemaining(`${h}h ${m}m ${s}s`);
+        } else {
+          setTimeRemaining(`${m}m ${s}s`);
+        }
+      }
+    };
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [endTime]);
 
   const handleDisableMaintenance = async () => {
     if (!window.confirm('Are you sure you want to disable Maintenance Mode and bring the site back online?')) return;
@@ -36,12 +71,6 @@ const MaintenancePage = () => {
       toast.error(err.response?.data?.message || 'Failed to disable maintenance mode.');
     }
   };
-
-  useEffect(() => {
-    // Check every 30 seconds automatically
-    const interval = setInterval(checkStatus, 30000);
-    return () => clearInterval(interval);
-  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex flex-col items-center justify-center p-4">
@@ -58,10 +87,17 @@ const MaintenancePage = () => {
           System Under Maintenance
         </h1>
         
-        <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+        <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
           We're currently upgrading Rasoi Junction to serve you better. 
           Please bear with us; we'll be back online shortly!
         </p>
+
+        {endTime && (
+          <div className="mb-8 p-4 bg-primary-50 dark:bg-primary-900/10 rounded-xl border border-primary-100 dark:border-primary-800/30">
+            <p className="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider mb-1">Expected Return In</p>
+            <p className="text-2xl font-black text-primary-700 dark:text-primary-300 font-mono">{timeRemaining}</p>
+          </div>
+        )}
         
         <div className="flex flex-col gap-3">
           <button 

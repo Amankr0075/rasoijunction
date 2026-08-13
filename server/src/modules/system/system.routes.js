@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMaintenanceStatus, toggleMaintenanceMode, sendCustomEmail, getEmailLogs, generatePromotionalEmail } from './system.controller.js';
+import { getMaintenanceStatus, toggleMaintenanceMode, sendCustomEmail, getEmailLogs, generatePromotionalEmail, enhanceEmail } from './system.controller.js';
 import { protect } from '../../middleware/auth.js';
 import authorize from '../../middleware/rbac.js';
 
@@ -12,5 +12,6 @@ router.post('/maintenance/toggle', protect, authorize('admin', 'manager'), toggl
 router.post('/emails/send', protect, authorize('admin'), sendCustomEmail);
 router.get('/emails/logs', protect, authorize('admin'), getEmailLogs);
 router.post('/emails/generate', protect, authorize('admin'), generatePromotionalEmail);
+router.post('/emails/enhance', protect, authorize('admin'), enhanceEmail);
 
 export default router;
