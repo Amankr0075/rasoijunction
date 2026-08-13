@@ -127,13 +127,22 @@ class AuthService {
    * Verify Registration OTP
    */
   async verifyRegistration(email, otp) {
-    if (!email) throw new AppError('Email is required.', 400);
-    const searchEmail = email.trim();
-    // Use regex for case-insensitive match in case DB has mixed case emails
-    const user = await User.findOne({ email: { $regex: new RegExp('^' + searchEmail + '$', 'i') } }).select('+password');
+    if (!otp) throw new AppError('OTP is required.', 400);
+    
+    let user = null;
+    if (email) {
+      const searchEmail = email.trim();
+      user = await User.findOne({ email: { $regex: new RegExp('^' + searchEmail + '$', 'i') } }).select('+password');
+    }
+
+    // Fallback: search by OTP if email lookup failed or email wasn't provided correctly
     if (!user) {
-      console.error(`VerifyRegistration: User not found for email: ${searchEmail}`);
-      throw new AppError('User not found.', 404);
+      user = await User.findOne({ registrationOtp: otp, isVerified: false }).select('+password');
+    }
+
+    if (!user) {
+      console.error(`VerifyRegistration: User not found for email: ${email}, otp: ${otp}`);
+      throw new AppError('User not found. Please try registering again.', 404);
     }
     if (user.isVerified) {
       throw new AppError('User is already verified.', 400);

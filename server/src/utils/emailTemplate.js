@@ -85,7 +85,7 @@ export const generateEmailTemplate = (contentHtml) => {
           ${contentHtml}
           
           <div class="button-container">
-            <a href="https://rasoijunction.vercel.app/menu" class="btn">Explore our menu</a>
+            <a href="https://rasoijunction.vercel.app/" class="btn">Explore our website</a>
           </div>
         </div>
         <div class="footer">

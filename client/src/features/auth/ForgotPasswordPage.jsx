@@ -6,13 +6,15 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import authService from '../../services/authService';
 import toast from 'react-hot-toast';
-import { HiOutlineMail, HiOutlineCheckCircle, HiOutlineLockClosed, HiOutlineKey } from 'react-icons/hi';
+import { HiOutlineMail, HiOutlineCheckCircle, HiOutlineLockClosed, HiOutlineKey, HiOutlineExclamationCircle } from 'react-icons/hi';
+import Modal from '../../components/ui/Modal';
 
 const ForgotPasswordPage = () => {
   const [step, setStep] = useState(1); // 1 = Email, 2 = OTP + New Password
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [showNotFoundModal, setShowNotFoundModal] = useState(false);
   
   const navigate = useNavigate();
   
@@ -27,7 +29,12 @@ const ForgotPasswordPage = () => {
       setStep(2);
       toast.success('OTP sent to your email!');
     } catch (error) {
-      toast.error(error.message || 'Failed to send OTP.');
+      if (error.response?.status === 404 || error.message === 'User not found.') {
+        setUserEmail(data.email);
+        setShowNotFoundModal(true);
+      } else {
+        toast.error(error.message || 'Failed to send OTP.');
+      }
     } finally {
       setLoading(false);
     }
@@ -156,6 +163,38 @@ const ForgotPasswordPage = () => {
           </Link>
         </div>
       </motion.div>
+
+      <Modal
+        isOpen={showNotFoundModal}
+        onClose={() => setShowNotFoundModal(false)}
+        title="Account Not Found"
+        size="md"
+      >
+        <div className="text-center p-4">
+          <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <HiOutlineExclamationCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            We couldn't find an account associated with <strong>{userEmail}</strong>. Would you like to create a new account with this email address?
+          </p>
+          <div className="flex flex-col gap-3">
+            <Button
+              variant="primary"
+              onClick={() => navigate('/register', { state: { email: userEmail } })}
+              className="w-full"
+            >
+              Create Account
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowNotFoundModal(false)}
+              className="w-full"
+            >
+              Try Another Email
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
