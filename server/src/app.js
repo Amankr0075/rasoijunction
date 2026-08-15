@@ -21,6 +21,7 @@ import contactRoutes from './modules/contact/contact.routes.js';
 import systemRoutes from './modules/system/system.routes.js';
 import { maintenanceMiddleware } from './middleware/maintenance.js';
 import { optionalAuth } from './middleware/auth.js';
+import summarizeRoutes from './routes/summarize.routes.js';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -73,6 +74,7 @@ app.use('/api/feedbacks', feedbackRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/contacts', contactRoutes);
+app.use('/api', summarizeRoutes);
 
 // ─── Health Check ────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

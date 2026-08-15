@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 // Load .env from server root
 dotenv.config({ path: resolve(__dirname, '../../.env') });
 
-const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
+const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'GROQ_API_KEY'];
 
 // Validate required environment variables
 requiredEnvVars.forEach((varName) => {
@@ -34,6 +34,7 @@ const env = {
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASS: process.env.EMAIL_PASS,
   EMAIL_FROM: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+  GROQ_API_KEY: process.env.GROQ_API_KEY,
 };
 
 export default env;
