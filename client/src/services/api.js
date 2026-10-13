@@ -1,8 +1,15 @@
 import axios from 'axios';
 
+const PRIMARY_URL = import.meta.env.VITE_API_URL || 'https://rasoijunction.up.railway.app/api';
+const FALLBACK_URL = import.meta.env.VITE_FALLBACK_API_URL || 'https://zodiac-snooper-cornfield.ngrok-free.dev/api';
+
+// Retrieve cached active base URL if previously failed over in this session
+const initialBaseURL = (typeof window !== 'undefined' && sessionStorage.getItem('active_api_url')) || PRIMARY_URL;
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: initialBaseURL,
   withCredentials: true,
+  timeout: 12000,
   headers: {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
@@ -40,6 +47,35 @@ api.interceptors.response.use(
   (response) => response.data, // Unwrap data automatically
   async (error) => {
     const originalRequest = error.config;
+    if (!originalRequest) return Promise.reject(error);
+
+    // Failover to Fallback (Ngrok) if Primary (Railway) is unreachable or 502/503/504
+    const isGatewayOrNetworkError =
+      !error.response ||
+      [502, 504].includes(error.response?.status) ||
+      error.code === 'ECONNABORTED' ||
+      error.code === 'ERR_NETWORK' ||
+      error.message === 'Network Error';
+
+    if (
+      isGatewayOrNetworkError &&
+      !originalRequest._fallbackAttempted &&
+      FALLBACK_URL &&
+      api.defaults.baseURL !== FALLBACK_URL
+    ) {
+      console.warn(`⚠️ Primary backend (${api.defaults.baseURL}) unreachable. Auto-switching to Ngrok (${FALLBACK_URL})...`);
+      originalRequest._fallbackAttempted = true;
+
+      // Update base URL for subsequent calls
+      api.defaults.baseURL = FALLBACK_URL;
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('active_api_url', FALLBACK_URL);
+      }
+
+      // Retry current request against fallback
+      originalRequest.baseURL = FALLBACK_URL;
+      return api(originalRequest);
+    }
 
     // Handle 503 Service Unavailable (Maintenance Mode)
     if (error.response?.status === 503 && window.location.pathname !== '/maintenance') {
@@ -65,8 +101,9 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const response = await axios.post('/api/auth/refresh-token', {}, {
+        const response = await axios.post(`${api.defaults.baseURL}/auth/refresh-token`, {}, {
           withCredentials: true,
+          headers: { 'ngrok-skip-browser-warning': 'true' },
         });
 
         const { accessToken } = response.data.data;
