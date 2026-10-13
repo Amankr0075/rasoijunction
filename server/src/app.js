@@ -39,10 +39,13 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(cors({
-  origin: [env.CLIENT_URL, 'https://rasoijunction.vercel.app'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like curl, mobile native) and all origins in development
+    callback(null, true);
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'x-requested-with'],
 }));
 
 // ─── Body Parsing ────────────────────────────────────────────────────
@@ -76,8 +79,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api', summarizeRoutes);
 
-// ─── Health Check ────────────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
+// ─── Health Check & Root ─────────────────────────────────────────────
+app.get(['/', '/health', '/api/health'], (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Rasoi Junction API is running',

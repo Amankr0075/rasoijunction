@@ -30,10 +30,12 @@ const env = {
   COOKIE_EXPIRE: parseInt(process.env.COOKIE_EXPIRE, 10) || 7,
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
   EMAIL_HOST: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  EMAIL_IMAP_HOST: process.env.EMAIL_IMAP_HOST || 'imap.gmail.com',
   EMAIL_PORT: process.env.EMAIL_PORT || 587,
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASS: process.env.EMAIL_PASS,
   EMAIL_FROM: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+  ENABLE_AUTO_RESPONDER: process.env.ENABLE_AUTO_RESPONDER !== 'false',
   GROQ_API_KEY: process.env.GROQ_API_KEY,
 };
 

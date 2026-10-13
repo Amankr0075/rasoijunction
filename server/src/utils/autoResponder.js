@@ -6,13 +6,18 @@ import sendEmail from './sendEmail.js';
 let client;
 
 export const startAutoResponder = async () => {
+  if (!env.ENABLE_AUTO_RESPONDER) {
+    console.log('Skipping Auto-Responder: Disabled via ENABLE_AUTO_RESPONDER.');
+    return;
+  }
+
   if (!env.EMAIL_USER || !env.EMAIL_PASS) {
     console.log('Skipping Auto-Responder: No EMAIL_USER or EMAIL_PASS configured.');
     return;
   }
 
   client = new ImapFlow({
-    host: env.EMAIL_HOST || 'imap.gmail.com',
+    host: env.EMAIL_IMAP_HOST || 'imap.gmail.com',
     port: 993,
     secure: true,
     auth: {
@@ -100,6 +105,10 @@ export const startAutoResponder = async () => {
     }
 
   } catch (err) {
-    console.error('Auto-Responder Connection Error:', err);
+    if (err.authenticationFailed || err.serverResponseCode === 'AUTHENTICATIONFAILED') {
+      console.warn('⚠️ Auto-Responder: Gmail IMAP authentication failed. To enable auto-reply for incoming emails, ensure IMAP is enabled in your Gmail settings (Settings > Forwarding and POP/IMAP) and that EMAIL_PASS is a valid Google App Password.');
+    } else {
+      console.warn('⚠️ Auto-Responder Connection Warning:', err.message || err);
+    }
   }
 };
