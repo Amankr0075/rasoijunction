@@ -4,7 +4,7 @@ import env from '../config/env.js';
 export const initSocket = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: env.CLIENT_URL,
+      origin: [env.CLIENT_URL, 'https://rasoijunction.vercel.app', 'http://localhost:5173'].filter(Boolean),
       methods: ['GET', 'POST'],
       credentials: true,
     },
