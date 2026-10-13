@@ -20,7 +20,7 @@ const startServer = async () => {
     initSocket(server);
 
     // Start HTTP server
-    server.listen(env.PORT, () => {
+    server.listen(env.PORT, '0.0.0.0', () => {
       console.log('');
       console.log('╔══════════════════════════════════════════════╗');
       console.log('║       🍽️  RASOI JUNCTION SERVER              ║');

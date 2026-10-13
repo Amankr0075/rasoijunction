@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "start": "npm run start --prefix server",
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\""
   },
   "dependencies": {
