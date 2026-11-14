@@ -239,7 +239,7 @@ export const generateInvoicePDF = async (order) => {
           <p class="invoice-type">Tax Invoice / Bill of Supply</p>
           <p class="invoice-id">${invoiceNumber}</p>
           <p class="gstin">GSTIN: 07AAAAA1111A1Z1 (Sample)</p>
-          <p class="email-info">rasoijunction.admin@gmail.com</p>
+          <p class="email-info">logiterax@gmail.com</p>
         </div>
       </div>
 
@@ -589,7 +589,7 @@ export const generateReservationPDF = async (reservation, payment) => {
           <p class="invoice-type">Table Booking Receipt</p>
           <p class="invoice-id">${invoiceNumber}</p>
           <p class="gstin">GSTIN: 07AAAAA1111A1Z1 (Sample)</p>
-          <p class="email-info">rasoijunction.admin@gmail.com</p>
+          <p class="email-info">logiterax@gmail.com</p>
         </div>
       </div>
 

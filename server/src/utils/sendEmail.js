@@ -107,6 +107,7 @@ const sendEmail = async (options) => {
     // 4. Define the email options
     const mailOptions = {
       from: `Rasoi Junction <${env.EMAIL_FROM || env.EMAIL_USER}>`,
+      replyTo: env.EMAIL_FROM || env.EMAIL_USER,
       to: options.email,
       subject: options.subject,
       text: options.message,

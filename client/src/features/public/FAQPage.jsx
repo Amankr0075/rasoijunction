@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiChevronDown, HiSearch, HiQuestionMarkCircle } from 'react-icons/hi';
 import Card from '../../components/ui/Card';
@@ -61,12 +62,12 @@ const FAQPage = () => {
   };
 
   // Filter FAQs based on category and search query
-  const filteredFAQs = faqs.flatMap((cat, catIdx) => 
+  const filteredFAQs = faqs.flatMap((cat, catIdx) =>
     cat.questions
-      .filter(q => 
+      .filter(q =>
         (activeCategory === 'All' || cat.category === activeCategory) &&
-        (q.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
-         q.a.toLowerCase().includes(searchQuery.toLowerCase()))
+        (q.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          q.a.toLowerCase().includes(searchQuery.toLowerCase()))
       )
       .map((q, idx) => ({ ...q, category: cat.category, id: `${catIdx}-${idx}` }))
   );
@@ -74,10 +75,10 @@ const FAQPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950 py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        
+
         {/* Header */}
         <div className="text-center mb-12">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 text-xs font-semibold uppercase tracking-wider mb-3"
@@ -85,7 +86,7 @@ const FAQPage = () => {
             <HiQuestionMarkCircle className="w-4 h-4" />
             Support Center
           </motion.div>
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -93,7 +94,7 @@ const FAQPage = () => {
           >
             Frequently Asked <span className="text-gradient">Questions</span>
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
@@ -104,7 +105,7 @@ const FAQPage = () => {
         </div>
 
         {/* Search Bar */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -123,7 +124,7 @@ const FAQPage = () => {
         </motion.div>
 
         {/* Category Tabs */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
@@ -136,11 +137,10 @@ const FAQPage = () => {
                 setActiveCategory(cat);
                 setOpenIndex(null);
               }}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all duration-200 uppercase ${
-                activeCategory === cat
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all duration-200 uppercase ${activeCategory === cat
                   ? 'bg-primary-500 text-white shadow-md'
                   : 'bg-white dark:bg-dark-900 text-gray-600 dark:text-dark-400 border border-gray-200 dark:border-dark-800 hover:bg-gray-100 dark:hover:bg-dark-800'
-              }`}
+                }`}
             >
               {cat}
             </button>
@@ -148,7 +148,7 @@ const FAQPage = () => {
         </motion.div>
 
         {/* FAQ List */}
-        <motion.div 
+        <motion.div
           layout
           className="space-y-4"
         >
@@ -156,7 +156,7 @@ const FAQPage = () => {
             filteredFAQs.map((faq, index) => {
               const isOpen = openIndex === faq.id;
               return (
-                <motion.div 
+                <motion.div
                   key={faq.id}
                   layout
                   className="bg-white dark:bg-dark-900 border border-gray-100 dark:border-dark-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
@@ -173,8 +173,8 @@ const FAQPage = () => {
                         {faq.q}
                       </h3>
                     </div>
-                    <HiChevronDown 
-                      className={`w-5 h-5 text-gray-500 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+                    <HiChevronDown
+                      className={`w-5 h-5 text-gray-500 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
                   <AnimatePresence initial={false}>
@@ -199,6 +199,33 @@ const FAQPage = () => {
               <p className="text-gray-500 dark:text-dark-400">No questions matched your search criteria.</p>
             </div>
           )}
+        </motion.div>
+
+        {/* Still have questions banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-16 text-center bg-white dark:bg-dark-900 border border-gray-100 dark:border-dark-800 rounded-3xl p-8 max-w-xl mx-auto shadow-sm"
+        >
+          <h3 className="text-xl font-bold font-display text-dark-800 dark:text-white mb-2">Still have questions?</h3>
+          <p className="text-sm text-gray-500 dark:text-dark-400 mb-6">
+            Can't find the answer you're looking for? Reach out to our customer support team anytime.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="mailto:logiterax@gmail.com"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-primary-500 text-white font-medium text-sm hover:bg-primary-600 transition-colors shadow-sm"
+            >
+              Email logiterax@gmail.com
+            </a>
+            <Link
+              to="/contact"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-dark-800 text-dark-700 dark:text-dark-200 font-medium text-sm hover:bg-gray-200 dark:hover:bg-dark-700 transition-colors"
+            >
+              Visit Contact Page
+            </Link>
+          </div>
         </motion.div>
 
       </div>

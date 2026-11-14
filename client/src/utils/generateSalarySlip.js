@@ -68,7 +68,7 @@ export const generateSalarySlip = async (user, payment, action = 'download') => 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(203, 213, 225); // Slate 300
   doc.text('Parul University, Vadodara, Gujarat, 391760', headerTextStartX, 28);
-  doc.text('Phone: +91 1234567890 | Email: rasoijunction.admin@gmail.com', headerTextStartX, 33);
+  doc.text('Phone: +91 1234567890 | Email: logiterax@gmail.com', headerTextStartX, 33);
 
   // --- WATERMARK ---
   if (logoData) {

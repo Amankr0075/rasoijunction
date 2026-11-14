@@ -469,6 +469,7 @@ npm run start --prefix server
 
 | Date (YYYY-MM-DD) | Change Category | Description | Author / Agent |
 |---|---|---|---|
+| **2026-11-14** | Email Configuration & Credential Migration | Migrated global email & Google App Password configuration to `logiterax@gmail.com` across backend environment, templates, PDF generators, customer contact UI, invoices, and excel export modules. | Antigravity AI |
 | **2026-11-14** | Email Reliability & Diagnostics | Fixed relative logo attachment ENOENT pathing bug in `sendEmail.js`, added Gmail service auto-detection, auto-trimmed password spaces, improved EAUTH/535 diagnostic reporting, enhanced `testEmail.js`, and added dev-mode OTP fallback logging. | Antigravity AI |
 | **2026-10-13** | Initial Architecture | Created comprehensive `brain.md` project brain establishing system architecture, protocols, RBAC, schema definitions, and workflows. | Antigravity AI |
 

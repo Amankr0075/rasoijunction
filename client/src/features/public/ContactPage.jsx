@@ -27,7 +27,7 @@ const ContactPage = () => {
 
   const contactInfos = [
     { icon: HiOutlinePhone, title: 'Call Us Directly', detail: '1234567890', subtitle: 'Support: 11:00 AM - 11:00 PM' },
-    { icon: HiOutlineMail, title: 'Email Inquiries', detail: 'rasoijunction.admin@gmail.com', subtitle: 'Response time: Within 2 hours' },
+    { icon: HiOutlineMail, title: 'Email Inquiries', detail: 'logiterax@gmail.com', subtitle: 'Response time: Within 2 hours' },
     { icon: HiOutlineLocationMarker, title: 'Our Location', detail: 'Parul University', subtitle: 'Vadodara, Gujarat, 391760' },
     { icon: HiOutlineClock, title: 'Operating Hours', detail: 'Everyday: 11:00 AM - 11:00 PM', subtitle: 'Dine-In, Delivery & Takeaway' }
   ];
@@ -73,7 +73,17 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-dark-800 dark:text-white text-sm">{info.title}</h3>
-                    <p className="text-sm text-primary-500 font-bold mt-1">{info.detail}</p>
+                    {info.title === 'Email Inquiries' ? (
+                      <a href={`mailto:${info.detail}`} className="text-sm text-primary-500 font-bold mt-1 hover:underline block">
+                        {info.detail}
+                      </a>
+                    ) : info.title === 'Call Us Directly' ? (
+                      <a href={`tel:${info.detail}`} className="text-sm text-primary-500 font-bold mt-1 hover:underline block">
+                        {info.detail}
+                      </a>
+                    ) : (
+                      <p className="text-sm text-primary-500 font-bold mt-1">{info.detail}</p>
+                    )}
                     <p className="text-xs text-gray-400 mt-0.5">{info.subtitle}</p>
                   </div>
                 </Card>

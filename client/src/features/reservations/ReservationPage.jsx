@@ -724,7 +724,7 @@ const ReservationPage = () => {
                   <div>
                     <h3 className="font-bold font-display text-lg text-dark-800 dark:text-white">Rasoi Junction</h3>
                     <p className="text-xs text-gray-400 mt-1.5">Invoice #RES-{selectedInvoice._id?.slice(-6).toUpperCase() || 'NEW'}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">rasoijunction.admin@gmail.com</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">logiterax@gmail.com</p>
                   </div>
                 </div>
               </div>

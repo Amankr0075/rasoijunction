@@ -108,7 +108,9 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-3">
                 <HiOutlineMail className="w-5 h-5 text-primary-500 flex-shrink-0" />
-                <span className="text-sm text-dark-400">rasoijunction.admin@gmail.com</span>
+                <a href="mailto:logiterax@gmail.com" className="text-sm text-dark-400 hover:text-primary-400 transition-colors">
+                  logiterax@gmail.com
+                </a>
               </li>
             </ul>
           </div>

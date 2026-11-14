@@ -117,6 +117,7 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
           {/* Invoice Footer note */}
           <div className="text-center text-[10px] text-gray-400 pt-6 border-t border-gray-100 dark:border-dark-800">
             <p>Thank you for choosing Rasoi Junction!</p>
+            <p className="mt-0.5">For inquiries or order assistance: <span className="text-primary-500 font-semibold">logiterax@gmail.com</span></p>
             <p className="mt-0.5">Please scan QR code at billing counter to verify your transaction status.</p>
           </div>
         </div>

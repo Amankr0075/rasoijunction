@@ -230,7 +230,7 @@ class AuthService {
     }
 
     if (user.isBlocked) {
-      throw new AppError('Your account has been blocked. Please email support with your concern to rasoijunction.admin@gmail.com to unlock your account.', 403);
+      throw new AppError('Your account has been blocked. Please email support with your concern to logiterax@gmail.com to unlock your account.', 403);
     }
 
     // Check password

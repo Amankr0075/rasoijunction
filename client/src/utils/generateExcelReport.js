@@ -73,7 +73,7 @@ export const generateExcelReport = async (orders, periodStr) => {
   // Platform Details & Period
   sheet.mergeCells('B5:I5');
   const detailsCell = sheet.getCell('B5');
-  detailsCell.value = 'Parul University, Vadodara | Phone: +91 1234567890 | Email: rasoijunction.admin@gmail.com';
+  detailsCell.value = 'Parul University, Vadodara | Phone: +91 1234567890 | Email: logiterax@gmail.com';
   detailsCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF475569' } };
   detailsCell.alignment = { horizontal: 'center' };
 

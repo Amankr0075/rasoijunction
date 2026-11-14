@@ -36,7 +36,7 @@ export const TermsContent = () => (
     <section className="border-t border-gray-100 dark:border-dark-800 pt-8 mt-8">
       <h2 className="text-lg font-bold text-dark-800 dark:text-white mb-2">4. Contact Information</h2>
       <p>
-        For legal support, inquiries regarding license agreements, intellectual property claims, or brand partnership terms, please reach out to rasoijunction.admin@gmail.com or mail us at Parul University, Vadodara, Gujarat.
+        For legal support, inquiries regarding license agreements, intellectual property claims, or brand partnership terms, please reach out to logiterax@gmail.com or mail us at Parul University, Vadodara, Gujarat.
       </p>
     </section>
   </div>

@@ -184,7 +184,7 @@ const InvoicePage = () => {
               <p className="text-xs text-gray-400">Tax Invoice / Bill of Supply</p>
               <h3 className="text-lg font-mono font-bold text-primary-500 mt-1">{payment.invoiceNumber}</h3>
               <p className="text-[10px] text-gray-400 mt-0.5">GSTIN: 07AAAAA1111A1Z1 (Sample)</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">rasoijunction.admin@gmail.com</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">logiterax@gmail.com</p>
             </div>
           </div>
 

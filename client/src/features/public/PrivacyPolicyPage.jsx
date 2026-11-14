@@ -37,7 +37,7 @@ export const PrivacyContent = () => (
     <section className="border-t border-gray-100 dark:border-dark-800 pt-8 mt-8">
       <h2 className="text-lg font-bold text-dark-800 dark:text-white mb-2">4. Your Rights</h2>
       <p>
-        You have the right to request details of the information we hold about you, request updates to incorrect details, or request that your profile be permanently deactivated from our system. If you have any inquiries regarding data protection, please contact rasoijunction.admin@gmail.com.
+        You have the right to request details of the information we hold about you, request updates to incorrect details, or request that your profile be permanently deactivated from our system. If you have any inquiries regarding data protection, please contact logiterax@gmail.com.
       </p>
     </section>
 

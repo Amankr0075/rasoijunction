@@ -42,7 +42,7 @@ const RefundPolicyPage = () => {
             <div>
               <h2 className="text-lg font-bold text-dark-800 dark:text-white mb-2">3. Quality issues & Missing Items</h2>
               <p>
-                If you receive an incorrect dish, food quality issues, or missing items in your delivery package, please raise a support ticket on our Contact page within 2 hours of order delivery. Our team will verify and initiate a partial or full refund as appropriate.
+                If you receive an incorrect dish, food quality issues, or missing items in your delivery package, please raise a support ticket on our Contact page or email us directly at <a href="mailto:logiterax@gmail.com" className="text-primary-500 font-semibold hover:underline">logiterax@gmail.com</a> within 2 hours of order delivery. Our team will verify and initiate a partial or full refund as appropriate.
               </p>
             </div>
           </section>
