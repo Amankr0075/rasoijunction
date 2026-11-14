@@ -321,7 +321,7 @@ When a client connects to Socket.IO, it issues a `join` event:
 1. **Startup**: When `server.js` boots, `startAutoResponder()` initiates an `ImapFlow` client targeting `EMAIL_IMAP_HOST` (e.g., `imap.gmail.com:993`).
 2. **Listener**: Binds to `client.on('exists')` inside the `INBOX` mailbox lock.
 3. **Loop Protection**: Inspects `auto-submitted` headers and sender email to reject messages originating from self or auto-reply loops.
-4. **Response**: Parses incoming inquiries using `mailparser`, logs the interaction into `EmailLog`, and formats a branded HTML reply using `Nodemailer`.
+4. **Response**: Parses incoming inquiries using `mailparser`, logs the interaction into `EmailLog`, and formats a branded HTML reply using `Nodemailer`. Note: For Gmail, Google requires an active 16-character App Password (with 2FA enabled on the account).
 5. **AI Summarization**: Inbound customer reviews or inquiries can be summarized via `POST /api/summarize` leveraging Groq LLM API.
 
 ---
@@ -469,6 +469,7 @@ npm run start --prefix server
 
 | Date (YYYY-MM-DD) | Change Category | Description | Author / Agent |
 |---|---|---|---|
+| **2026-11-14** | Email Reliability & Diagnostics | Fixed relative logo attachment ENOENT pathing bug in `sendEmail.js`, added Gmail service auto-detection, auto-trimmed password spaces, improved EAUTH/535 diagnostic reporting, enhanced `testEmail.js`, and added dev-mode OTP fallback logging. | Antigravity AI |
 | **2026-10-13** | Initial Architecture | Created comprehensive `brain.md` project brain establishing system architecture, protocols, RBAC, schema definitions, and workflows. | Antigravity AI |
 
 > **REMINDER**: Whenever you implement changes to Rasoi Junction, add a new row above this line documenting your change, and update the corresponding sections of `brain.md` accordingly!

@@ -117,7 +117,10 @@ class AuthService {
         html: htmlMessage,
       });
     } catch (err) {
-      console.error('Error sending OTP email:', err);
+      console.error('Error sending OTP email:', err.message || err);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`\n🔑 [DEV ONLY] Registration OTP for ${user.email}: ${otp}\n`);
+      }
     }
 
     return { user, message: 'OTP sent to email. Please verify.' };
@@ -438,11 +441,17 @@ class AuthService {
 
       return { message: 'OTP sent to email' };
     } catch (err) {
+      console.error('Error sending password reset OTP email:', err.message || err);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`\n🔑 [DEV ONLY] Password Reset OTP for ${user.email}: ${resetOtp}\n`);
+        return { message: 'OTP sent to email (also logged to server console in dev mode)' };
+      }
+
       user.resetPasswordOtp = undefined;
       user.resetPasswordOtpExpire = undefined;
       await user.save({ validateBeforeSave: false });
 
-      throw new AppError('Email could not be sent', 500);
+      throw new AppError('Email could not be sent. Please verify SMTP settings.', 500);
     }
   }
 

@@ -1,7 +1,37 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import env from '../config/env.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { generateEmailTemplate } from './emailTemplate.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Helper to safely find the logo path regardless of working directory
+const getLogoAttachment = () => {
+  const candidatePaths = [
+    path.resolve(__dirname, '../../../client/public/logo.png'),
+    path.resolve(__dirname, '../../../../client/public/logo.png'),
+    path.resolve(process.cwd(), 'client/public/logo.png'),
+    path.resolve(process.cwd(), '../client/public/logo.png'),
+    path.resolve(process.cwd(), 'public/logo.png'),
+  ];
+
+  for (const candidate of candidatePaths) {
+    if (fs.existsSync(candidate)) {
+      return [
+        {
+          filename: 'logo.png',
+          path: candidate,
+          cid: 'logo',
+        },
+      ];
+    }
+  }
+  return [];
+};
 
 /**
  * Send an email using Nodemailer
@@ -10,6 +40,8 @@ import { generateEmailTemplate } from './emailTemplate.js';
  * @param {string} options.subject - Email subject
  * @param {string} options.message - Email plain text message
  * @param {string} [options.html] - Optional HTML email body
+ * @param {Array} [options.attachments] - Optional attachments array
+ * @param {boolean} [options.wrapTemplate] - Explicitly force template wrapping
  */
 const sendEmail = async (options) => {
   // Skip sending email if it's a demo account
@@ -18,57 +50,84 @@ const sendEmail = async (options) => {
     return;
   }
 
+  if (!env.EMAIL_USER || !env.EMAIL_PASS) {
+    console.warn('⚠️ EMAIL_USER or EMAIL_PASS not configured. Skipping email dispatch.');
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEV MODE] Simulated email to: ${options.email} | Subject: "${options.subject}"`);
+    }
+    return;
+  }
+
   try {
-    // 1. Create a transporter
-    const transporter = nodemailer.createTransport({
-      host: env.EMAIL_HOST,
-      port: env.EMAIL_PORT,
-      secure: env.EMAIL_PORT === 465, // true for 465, false for other ports (like 587)
-      auth: {
-        user: env.EMAIL_USER,
-        pass: env.EMAIL_PASS,
-      },
-    });
+    // 1. Create a transporter with optimized configuration
+    const isGmail = env.EMAIL_SERVICE === 'gmail' || (env.EMAIL_HOST && env.EMAIL_HOST.includes('gmail'));
+    
+    const transportConfig = isGmail
+      ? {
+          service: 'gmail',
+          auth: {
+            user: env.EMAIL_USER,
+            pass: env.EMAIL_PASS,
+          },
+        }
+      : {
+          host: env.EMAIL_HOST,
+          port: Number(env.EMAIL_PORT) || 587,
+          secure: Number(env.EMAIL_PORT) === 465,
+          auth: {
+            user: env.EMAIL_USER,
+            pass: env.EMAIL_PASS,
+          },
+          tls: {
+            rejectUnauthorized: false,
+          },
+        };
 
-    // Add the logo attachment for CID inline embedding
-    const defaultAttachments = [
-      {
-        filename: 'logo.png',
-        path: '../client/public/logo.png', // path relative to the process execution (server root)
-        cid: 'logo' // same cid value as in the html img src
-      }
-    ];
+    const transporter = nodemailer.createTransport(transportConfig);
 
-    // Combine default with provided attachments
+    // 2. Attachments with safe resolution
+    const defaultAttachments = getLogoAttachment();
     const finalAttachments = options.attachments
       ? [...defaultAttachments, ...options.attachments]
       : defaultAttachments;
 
-    // Prepare HTML content using the template
-    let contentHtml = options.html;
-
-    // If html is not provided, convert text to simple html paragraphs
-    if (!contentHtml && options.message) {
-      contentHtml = options.message.split('\n').map(line => `<p>${line}</p>`).join('');
+    // 3. HTML formatting (avoid double wrapping pre-styled templates)
+    let finalHtml = options.html;
+    if (!finalHtml && options.message) {
+      const paragraphHtml = options.message
+        .split('\n')
+        .filter(Boolean)
+        .map(line => `<p>${line}</p>`)
+        .join('');
+      finalHtml = generateEmailTemplate(paragraphHtml);
+    } else if (finalHtml && options.wrapTemplate) {
+      finalHtml = generateEmailTemplate(finalHtml);
     }
 
-    const finalHtml = generateEmailTemplate(contentHtml);
-
-    // 2. Define the email options
+    // 4. Define the email options
     const mailOptions = {
-      from: `Rasoi Junction <${env.EMAIL_FROM}>`,
+      from: `Rasoi Junction <${env.EMAIL_FROM || env.EMAIL_USER}>`,
       to: options.email,
       subject: options.subject,
       text: options.message,
-      html: finalHtml,
-      attachments: finalAttachments,
+      ...(finalHtml && { html: finalHtml }),
+      ...(finalAttachments.length > 0 && { attachments: finalAttachments }),
     };
 
-    // 3. Actually send the email
-    await transporter.sendMail(mailOptions);
+    // 5. Actually send the email
+    return await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error('Error sending email:', error);
-    throw new AppError('There was an error sending the email. Try again later!', 500);
+    if (error.code === 'EAUTH' || (error.response && error.response.includes('535'))) {
+      console.error('❌ Email Authentication Failed (EAUTH / 535 BadCredentials):');
+      console.error('   1. Check that EMAIL_USER and EMAIL_PASS are correct in server/.env.');
+      console.error('   2. For Gmail, Google requires a 16-character App Password (https://myaccount.google.com/apppasswords).');
+      console.error('   3. Ensure 2-Step Verification is active on the Google account.');
+    } else if (error.code === 'ESOCKET' || error.code === 'ETIMEDOUT' || error.code === 'ECONNECTION') {
+      console.error(`❌ Email Connection Failed (${error.code}): Could not connect to ${env.EMAIL_HOST}:${env.EMAIL_PORT}.`);
+    } else {
+      console.error('❌ Error sending email:', error.message || error);
+    }
+    throw new AppError(error.message || 'There was an error sending the email. Try again later!', 500);
   }
 };
 
